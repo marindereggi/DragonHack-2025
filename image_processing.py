@@ -4,10 +4,7 @@ import matplotlib.pyplot as plt
 
 # ------ CONFIGURATION PARAMETERS - MODIFY THESE VALUES AS NEEDED ------
 # Input/output settings
-INPUT_IMAGE_PATH = "IMG_4181.jpg"  # Path to a single image file
-
-# Processing mode
-PROCESS_SINGLE_IMAGE = True                  # Set to True to process a single image
+INPUT_IMAGE_PATH = "IMG_4181.jpg"
 
 # Color detection parameters
 SATURATION_THRESHOLD = 20                    # Minimum saturation for green detection (10-50)
@@ -25,7 +22,7 @@ MAX_LINE_GAP = 10                            # Maximum gap between line segments
 ANGLE_THRESHOLD = 10.0                       # Maximum allowed deviation in degrees from mean angle
 
 # Line proximity filtering
-PROXIMITY_THRESHOLD = 5       # Minimum distance (in pixels) between parallel lines to be considered separate
+PROXIMITY_THRESHOLD = 5         # Minimum distance (in pixels) between parallel lines to be considered separate
 KEEP_BEST_BY_LENGTH = False     # True to keep longer lines, False to keep lines with better angle
 # -------------------------------------------------------------------
 
@@ -721,27 +718,36 @@ def extract_green_suture_mask(image_path):
     # 6. Create visualization with ALL filtered lines
     _ = visualize_suture_analysis(original_image, suture_analysis)
     
-    _ = display_analysis_results(original_image, suture_analysis)
-    plt.show()
-    
     return final_mask, original_image, suture_analysis
 
+def analyze_image(image_path):
+    """
+    Analyze a single image for green sutures.
+    
+    Args:
+        image_path (str): Path to the image file
+        
+    Returns:
+        tuple: (mask, original_image, suture_analysis)
+    """
+    mask, original_image, suture_analysis = extract_green_suture_mask(image_path)
+    return mask, original_image, suture_analysis
 
 if __name__ == "__main__":
-    print("Green Suture Extraction and Analysis Tool")
+    print(f"Processing single image: {INPUT_IMAGE_PATH}")
+    mask, image, analysis = extract_green_suture_mask(INPUT_IMAGE_PATH)
+
+    _ = display_analysis_results(image, analysis)
+    plt.show()
     
-    if PROCESS_SINGLE_IMAGE:
-        print(f"Processing single image: {INPUT_IMAGE_PATH}")
-        mask, image, analysis = extract_green_suture_mask(INPUT_IMAGE_PATH)
-        
-        # Print analysis summary
-        if "error" not in analysis:
-            print("\nAnalysis Summary:")
-            print(f"Detected {analysis['sutures_detected']} sutures")
-            print(f"Mean Angle: {analysis['mean_angle']:.1f}°")
-            print(f"Parallel: {'YES' if analysis['parallelism'] else 'NO'}")
-            print(f"Even Spacing: {'YES' if analysis['even_spacing'] else 'NO'}")
-        else:
-            print(f"\nAnalysis Error: {analysis['error']}")
+    # Print analysis summary
+    if "error" not in analysis:
+        print("\nAnalysis Summary:")
+        print(f"Detected {analysis['sutures_detected']} sutures")
+        print(f"Mean Angle: {analysis['mean_angle']:.1f}°")
+        print(f"Parallel: {'YES' if analysis['parallelism'] else 'NO'}")
+        print(f"Even Spacing: {'YES' if analysis['even_spacing'] else 'NO'}")
+    else:
+        print(f"\nAnalysis Error: {analysis['error']}")
         
     print("Processing complete.")
