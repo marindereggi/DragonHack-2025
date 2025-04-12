@@ -56,6 +56,23 @@ export default function StitchMaster() {
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null)
 
+  // Add this useEffect to handle ESC key press for full screen mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullScreen) {
+        closeFullScreen();
+      }
+    };
+
+    if (isFullScreen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullScreen]);
+
   // Handle file upload
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
