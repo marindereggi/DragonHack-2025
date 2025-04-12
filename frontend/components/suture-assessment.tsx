@@ -162,7 +162,7 @@ export default function StitchMaster() {
             ctx.drawImage(img, 0, 0, img.width, img.height);
 
             // Draw each suture
-            data.analysis.sutures.forEach((suture) => {
+            data.analysis.sutures.forEach((suture: Suture) => {
               // Set line style based on whether the suture is good
               ctx.lineWidth = 4;
               ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444"; // Green for good, red for bad
