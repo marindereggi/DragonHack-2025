@@ -342,8 +342,8 @@ export default function StitchMaster() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Image Upload and Analysis */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-teal-800 flex items-center gap-2">
-            <Microscope className="h-5 w-5 text-teal-600" />
+          <h2 className="text-xl font-semibold mb-4 text-teal-800 dark:text-teal-300 flex items-center gap-2">
+            <Microscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             Suture Image Analysis
           </h2>
 
@@ -351,7 +351,9 @@ export default function StitchMaster() {
             {...getRootProps()}
             className={cn(
               "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors",
-              isDragActive ? "border-teal-500 bg-teal-50" : "border-gray-300 hover:border-teal-400",
+              isDragActive 
+                ? "border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20" 
+                : "border-gray-300 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-400",
               "h-64",
             )}
           >
@@ -377,21 +379,21 @@ export default function StitchMaster() {
               </div>
             ) : (
               <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-sm text-gray-600 mb-1">
+                <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                   {isDragActive ? "Drop the image here" : "Drag & drop a suture image here"}
                 </p>
-                <p className="text-xs text-gray-500">or click to select a file</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500">or click to select a file</p>
               </div>
             )}
           </div>
 
           {originalImage && !processedImage && (
             <div className="mt-4">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 <span className="font-medium">Selected file:</span> {fileName}
               </p>
-              <Button onClick={analyzeSutures} disabled={isProcessing} className="w-full bg-teal-600 hover:bg-teal-700">
+              <Button onClick={analyzeSutures} disabled={isProcessing} className="w-full">
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -407,11 +409,11 @@ export default function StitchMaster() {
           {analysis && (
             <div className="mt-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600">Parallel Sutures</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Parallel Sutures</span>
                     {analysis.isParallel ? (
-                      <Badge className="bg-green-500">
+                      <Badge className="bg-green-500 dark:bg-green-600">
                         <Check className="h-3 w-3 mr-1" /> Yes
                       </Badge>
                     ) : (
@@ -422,11 +424,11 @@ export default function StitchMaster() {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600">Equal Spacing</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Equal Spacing</span>
                     {analysis.isEquallySpaced ? (
-                      <Badge className="bg-green-500">
+                      <Badge className="bg-green-500 dark:bg-green-600">
                         <Check className="h-3 w-3 mr-1" /> Yes
                       </Badge>
                     ) : (
@@ -438,15 +440,19 @@ export default function StitchMaster() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium text-gray-800">Overall Score</h3>
-                  <span className="text-2xl font-bold text-teal-600">{analysis.score}/100</span>
+                  <h3 className="font-medium text-gray-800 dark:text-gray-200">Overall Score</h3>
+                  <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">{analysis.score}/100</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                   <div
                     className={`h-2.5 rounded-full ${
-                      analysis.score >= 80 ? "bg-green-500" : analysis.score >= 60 ? "bg-yellow-500" : "bg-red-500"
+                      analysis.score >= 80 
+                        ? "bg-green-500 dark:bg-green-600" 
+                        : analysis.score >= 60 
+                          ? "bg-yellow-500 dark:bg-yellow-600" 
+                          : "bg-red-500 dark:bg-red-600"
                     }`}
                     style={{ width: `${analysis.score}%` }}
                   ></div>
@@ -454,7 +460,7 @@ export default function StitchMaster() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Add Personal Notes
                 </label>
                 <Textarea
@@ -466,9 +472,22 @@ export default function StitchMaster() {
                 />
               </div>
 
-              <Button onClick={saveAssessment} className="w-full bg-teal-600 hover:bg-teal-700">
-                <Save className="mr-2 h-4 w-4" />
-                Save to History
+              <Button 
+                onClick={saveAssessment} 
+                disabled={isProcessing}
+                className="w-full mt-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Assessment...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-1" />
+                    Save To History
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -477,82 +496,63 @@ export default function StitchMaster() {
           <canvas ref={canvasRef} className="hidden" />
         </Card>
 
-        {/* Right Column - Chat Interface */}
+        {/* Right Column - AI Chat */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-teal-800 flex items-center gap-2">
-            <Bot className="h-5 w-5 text-teal-600" />
-            Feedback Assistant
+          <h2 className="text-xl font-semibold mb-4 text-teal-800 dark:text-teal-300 flex items-center gap-2">
+            <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            AI Assistant
           </h2>
 
-          <div className="h-[500px] overflow-y-auto mb-4 border rounded-lg p-4 bg-gray-50">
-            {messages.length > 0 ? (
-              messages.map((message) => (
+          <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-[400px] overflow-y-auto flex flex-col gap-4">
+            {messages.length === 0 ? (
+              <div className="text-center py-10">
+                <Bot className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-600 mb-2" />
+                <p className="text-gray-500 dark:text-gray-400">Upload an image to get feedback from the AI assistant.</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
                 <div
-                  key={message.id}
-                  className={`flex items-start gap-3 mb-4 ${message.sender === "user" ? "justify-end" : ""}`}
+                  key={msg.id}
+                  className={`flex gap-3 ${
+                    msg.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  {message.sender === "ai" && (
-                    <Avatar className="h-8 w-8 bg-teal-100">
-                      <Bot className="h-4 w-4 text-teal-600" />
+                  {msg.sender === "ai" && (
+                    <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900">
+                      <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </Avatar>
                   )}
-
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === "user" ? "bg-teal-600 text-white" : "bg-white border border-gray-200"
+                    className={`rounded-lg p-3 max-w-[80%] ${
+                      msg.sender === "user"
+                        ? "bg-teal-600 dark:bg-teal-800 text-white"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
                     }`}
                   >
-                    <p className="whitespace-pre-line text-sm">{message.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+                    <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                   </div>
-
-                  {message.sender === "user" && (
-                    <Avatar className="h-8 w-8 bg-teal-600">
-                      <User className="h-4 w-4 text-white" />
+                  {msg.sender === "user" && (
+                    <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700">
+                      <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </Avatar>
                   )}
                 </div>
               ))
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <Bot className="h-16 w-16 mb-4 text-gray-300" />
-                <p className="text-lg text-gray-500 mb-2">Feedback Assistant</p>
-                <p className="text-sm text-gray-500 text-center max-w-md">
-                  Upload and analyze a suture image to receive detailed feedback and guidance from our AI assistant.
-                </p>
-              </div>
             )}
-
             {isTyping && (
-              <div className="flex items-start gap-3 mb-4">
-                <Avatar className="h-8 w-8 bg-teal-100">
-                  <Bot className="h-4 w-4 text-teal-600" />
+              <div className="flex gap-3 justify-start">
+                <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900">
+                  <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                 </Avatar>
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex gap-1">
-                    <span
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0ms" }}
-                    ></span>
-                    <span
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "150ms" }}
-                    ></span>
-                    <span
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    ></span>
+                <div className="rounded-lg p-3 bg-gray-100 dark:bg-gray-800">
+                  <div className="flex gap-1 items-center">
+                    <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse"></div>
+                    <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse delay-100"></div>
+                    <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse delay-200"></div>
                   </div>
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           <div className="flex gap-2">
