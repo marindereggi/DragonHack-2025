@@ -11,11 +11,24 @@ import { Calendar, Clock, BarChart4, FileText, ArrowUpRight, History, LayoutDash
 import { Loader2 } from "lucide-react"
 import { ClipboardX } from "lucide-react"
 
+interface Assessment {
+  id: string | number;
+  date: string;
+  time: string;
+  score: number;
+  parallelism: boolean;
+  spacing: boolean;
+  sutureCount: number;
+  notes?: string;
+  imageSrc: string;
+  feedback?: string[];
+}
+
 export default function ProgressHistory() {
-  const [pastAssessments, setPastAssessments] = useState([]);
+  const [pastAssessments, setPastAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
 
   // Pridobi zgodovino ob nalaganju komponente
   useEffect(() => {
@@ -35,7 +48,7 @@ export default function ProgressHistory() {
       const data = await response.json();
       
       // Pretvori podatke v obliko, ki jo komponenta uporablja
-      const formattedHistory = data.history.map(item => ({
+      const formattedHistory: Assessment[] = data.history.map((item: any) => ({
         id: item.id,
         date: new Date(item.timestamp).toLocaleDateString('en-US'),
         time: new Date(item.timestamp).toLocaleTimeString('en-US', {
@@ -255,8 +268,10 @@ export default function ProgressHistory() {
                 pastAssessments.map((assessment) => (
                   <div
                     key={assessment.id}
-                    className={`p-4 cursor-pointer hover:bg-muted/30 transition-colors ${
-                      selectedAssessment?.id === assessment.id ? "bg-muted/40" : ""
+                    className={`p-4 cursor-pointer transition-colors ${
+                      selectedAssessment?.id === assessment.id 
+                        ? "bg-muted/80 dark:bg-muted/30 border-l-4 border-l-teal-500 dark:border-l-teal-400" 
+                        : "hover:bg-muted/40 dark:hover:bg-muted/20 border-l-4 border-l-transparent"
                     }`}
                     onClick={() => setSelectedAssessment(assessment)}
                   >
@@ -272,37 +287,37 @@ export default function ProgressHistory() {
                           <Badge
                             className={`${
                               assessment.score >= 80 
-                                ? "bg-green-500 dark:bg-green-600" 
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/50" 
                                 : assessment.score >= 70 
-                                  ? "bg-yellow-500 dark:bg-yellow-600" 
-                                  : "bg-red-500 dark:bg-red-600"
-                            }`}
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/50" 
+                                  : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-200 dark:hover:bg-rose-900/50"
+                            } whitespace-nowrap px-3 py-0.5 border rounded-full text-xs font-medium transition-colors`}
                           >
                             Score: {assessment.score}
                           </Badge>
-                          <Badge variant="outline" className="border-border text-foreground/70">
+                          <Badge 
+                            className="bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-300 border-gray-200 dark:border-gray-700 whitespace-nowrap px-3 py-0.5 border rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-800/60 transition-colors"
+                          >
                             {assessment.sutureCount} sutures
                           </Badge>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1.5 mt-1">
                         <Badge
-                          variant="outline"
                           className={`${
                             assessment.parallelism
-                              ? "border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20"
-                              : "border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20"
-                          }`}
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                          } whitespace-nowrap px-3 py-0.5 border rounded-full text-xs font-medium transition-colors`}
                         >
                           {assessment.parallelism ? "Parallel" : "Non-parallel"}
                         </Badge>
                         <Badge
-                          variant="outline"
                           className={`${
                             assessment.spacing
-                              ? "border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20"
-                              : "border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20"
-                          }`}
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                              : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-200 dark:hover:bg-rose-900/50"
+                          } whitespace-nowrap px-3 py-0.5 border rounded-full text-xs font-medium transition-colors`}
                         >
                           {assessment.spacing ? "Even spacing" : "Uneven spacing"}
                         </Badge>
@@ -358,7 +373,11 @@ export default function ProgressHistory() {
                     <div className="bg-muted/50 p-2 rounded">
                       <span className="text-muted-foreground">Parallelism:</span>{" "}
                       <span
-                        className={`font-medium ${selectedAssessment.parallelism ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                        className={`font-medium ${
+                          selectedAssessment.parallelism 
+                            ? "text-emerald-600 dark:text-emerald-400" 
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}
                       >
                         {selectedAssessment.parallelism ? "Passed" : "Failed"}
                       </span>
@@ -366,7 +385,11 @@ export default function ProgressHistory() {
                     <div className="bg-muted/50 p-2 rounded">
                       <span className="text-muted-foreground">Equal Spacing:</span>{" "}
                       <span
-                        className={`font-medium ${selectedAssessment.spacing ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                        className={`font-medium ${
+                          selectedAssessment.spacing 
+                            ? "text-emerald-600 dark:text-emerald-400" 
+                            : "text-rose-600 dark:text-rose-400"
+                        }`}
                       >
                         {selectedAssessment.spacing ? "Passed" : "Failed"}
                       </span>
