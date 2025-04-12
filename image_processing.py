@@ -502,7 +502,7 @@ def analyze_suture_quality(suture_lines, angle_threshold=ANGLE_THRESHOLD):
     # For overall assessment, calculate if there are any large gaps
     # (more adaptive than using a fixed variance threshold)
     max_distance_deviation = max([abs(d - avg_distance) for d in distances]) if distances else 0
-    large_gap_exists = max_distance_deviation > (0.5 * avg_distance)  # 50% threshold for large gaps
+    large_gap_exists = max_distance_deviation > (0.15 * avg_distance)  # 50% threshold for large gaps
     
     # Evaluate each suture
     suture_quality = []
@@ -663,18 +663,16 @@ def select_best_line_per_region(binary_mask, suture_lines):
     print(f"Selected {len(best_lines)} best lines from {processed_contours} contour regions")
     return best_lines
 
-def extract_green_suture_mask(image_path):
+def extract_green_suture_mask(original_image):
     """
     Extract green suture mask from a given image and analyze suture quality.
     
     Args:
-        image_path (str): Path to the image file
+        original_image (numpy.ndarray): Input RGB image
         
     Returns:
         tuple: (mask, original_image, suture_analysis)
     """
-    # Load the image
-    original_image = load_image(image_path)
     
     # Method 1: HSV color thresholding
     hsv_mask = extract_green_sutures(original_image)
@@ -720,22 +718,23 @@ def extract_green_suture_mask(image_path):
     
     return final_mask, original_image, suture_analysis
 
-def analyze_image(image_path):
+def analyze_image(image):
     """
-    Analyze a single image for green sutures.
+    Analyze an image directly from a numpy array instead of loading from disk.
     
     Args:
-        image_path (str): Path to the image file
+        image_array (numpy.ndarray): The image as a numpy array (RGB format)
         
     Returns:
         tuple: (mask, original_image, suture_analysis)
     """
-    mask, original_image, suture_analysis = extract_green_suture_mask(image_path)
+    mask, original_image, suture_analysis = extract_green_suture_mask(image)
     return mask, original_image, suture_analysis
 
 if __name__ == "__main__":
     print(f"Processing single image: {INPUT_IMAGE_PATH}")
-    mask, image, analysis = extract_green_suture_mask(INPUT_IMAGE_PATH)
+    original_image = load_image(INPUT_IMAGE_PATH)
+    mask, image, analysis = extract_green_suture_mask(original_image)
 
     _ = display_analysis_results(image, analysis)
     plt.show()

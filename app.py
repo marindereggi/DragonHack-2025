@@ -7,22 +7,13 @@ from datetime import datetime
 import image_processing
 import numpy as np
 import cv2
+import base64
 
 app = Flask(__name__)
 CORS(app)
 
 # Configuration
-UPLOAD_FOLDER = 'uploads'
-RESULTS_FOLDER = 'results'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-if not os.path.exists(RESULTS_FOLDER):
-    os.makedirs(RESULTS_FOLDER)
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -37,33 +28,34 @@ def process_image():
         return jsonify({'error': 'No selected file'}), 400
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        unique_id = str(uuid.uuid4())
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
-        file.save(filepath)
+        # Read the image directly from the uploaded file into memory
+        file_bytes = file.read()
+        nparr = np.frombuffer(file_bytes, np.uint8)
+        original_image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # Process image
-        _, original_image, suture_analysis = image_processing.analyze_image(filepath)
+        # Convert from BGR to RGB (OpenCV loads as BGR, but our processor expects RGB)
+        original_image = cv2.cvtColor(original_image_bgr, cv2.COLOR_BGR2RGB)
+        
+        # Process image directly (you'll need to modify analyze_image() to accept an image array)
+        _, original_image, suture_analysis = image_processing.analyze_image(original_image)
         
         # Create visualization image with analysis results
         if "error" not in suture_analysis:
-            result_filename = f"{unique_id}_result.png"
-            result_path = os.path.join(app.config['RESULTS_FOLDER'], result_filename)
-            
             # Generate visualization
             visualized = image_processing.visualize_suture_analysis(original_image, suture_analysis)
             
-            # Convert from RGB to BGR for OpenCV
+            # Convert directly to base64
             visualized_bgr = cv2.cvtColor(visualized, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(result_path, visualized_bgr)
+            _, buffer = cv2.imencode('.png', visualized_bgr)
+            result_base64 = base64.b64encode(buffer).decode('utf-8')
         else:
-            result_filename = None
+            result_base64 = None
         
-        # Create response data with file paths instead of arrays
+        # Create response data
         response = {
             'timestamp': datetime.now().isoformat(),
-            'original_filename': filename,
-            'result_filename': result_filename,
+            'original_filename': secure_filename(file.filename),
+            'result_image_base64': result_base64,
             'suture_analysis': sanitize_for_json(suture_analysis),
         }
         
