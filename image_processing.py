@@ -289,6 +289,9 @@ def display_analysis_results(original_image, suture_analysis):
     Args:
         original_image (numpy.ndarray): Original RGB image
         suture_analysis (dict): Analysis results from analyze_suture_quality
+        
+    Returns:
+        matplotlib.figure.Figure: The generated figure with analysis results
     """
     # Get the image with colored lines and numbered labels
     analysis_image = visualize_suture_analysis(original_image, suture_analysis)
@@ -341,12 +344,20 @@ def display_analysis_results(original_image, suture_analysis):
     headers = ["#", "Angle", "Deviation", "Parallel", "Even Spacing", "Quality"]
     
     for i, suture in enumerate(suture_analysis['individual_sutures']):
+        # Extract spacing status into a separate variable
+        if suture.get('even_spacing', False):
+            spacing_status = "✓"
+        elif 'distance_deviation' in suture:
+            spacing_status = "✗"
+        else:
+            spacing_status = "N/A"
+            
         row = [
             f"{i+1}",
             f"{suture['angle']:.1f}°",
             f"{suture['angle_deviation']:.1f}°",
             "✓" if suture.get('is_parallel', False) else "✗",
-            "✓" if suture.get('even_spacing', False) else "✗" if 'distance_deviation' in suture else "N/A",
+            spacing_status,
             "GOOD" if suture.get('overall_good', False) else "NEEDS IMPROVEMENT"
         ]
         table_data.append(row)
@@ -362,10 +373,31 @@ def display_analysis_results(original_image, suture_analysis):
     # Style the table
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    table.scale(1, 1.2)  # Make the table taller
     
-    plt.tight_layout()
     return fig
+
+def _select_best_line(close_lines, keep_by_length, mean_angle=None):
+    """
+    Helper function to select the best line from a group of close lines.
+    
+    Args:
+        close_lines (list): List of close suture lines
+        keep_by_length (bool): If True, keep the longer line; if False, keep the line that better fits the mean angle
+        mean_angle (float, optional): Mean angle for comparison when keep_by_length is False
+        
+    Returns:
+        tuple: The best line from the group
+    """
+    if len(close_lines) <= 1:
+        return close_lines[0]
+        
+    if keep_by_length:
+        # Keep the longest line
+        return max(close_lines, key=lambda line: 
+                  np.sqrt((line[1][0] - line[0][0])**2 + (line[1][1] - line[0][1])**2))
+    else:
+        # Keep the line with angle closest to mean
+        return min(close_lines, key=lambda line: abs(line[2] - mean_angle))
 
 def filter_nearby_lines(suture_lines, proximity_threshold=PROXIMITY_THRESHOLD, keep_by_length=KEEP_BEST_BY_LENGTH):
     """
@@ -385,8 +417,8 @@ def filter_nearby_lines(suture_lines, proximity_threshold=PROXIMITY_THRESHOLD, k
     # Sort lines by x-coordinate (left to right) instead of y-coordinate
     suture_lines.sort(key=lambda line: (line[0][0] + line[1][0]) / 2)
     
-    # Rest of function implementation needs to be adjusted to check proximity in the x-direction
     # Calculate mean angle if needed for quality comparison
+    mean_angle = None
     if not keep_by_length:
         angles = [line[2] for line in suture_lines]
         mean_angle = np.mean(angles)
@@ -417,20 +449,9 @@ def filter_nearby_lines(suture_lines, proximity_threshold=PROXIMITY_THRESHOLD, k
         # Skip to the next group of lines
         i = j
         
-        # If we found multiple close lines, keep only the best one
-        if len(close_lines) > 1:
-            if keep_by_length:
-                # Keep the longest line
-                best_line = max(close_lines, key=lambda line: 
-                               np.sqrt((line[1][0] - line[0][0])**2 + (line[1][1] - line[0][1])**2))
-            else:
-                # Keep the line with angle closest to mean
-                best_line = min(close_lines, key=lambda line: abs(line[2] - mean_angle))
-            
-            filtered_lines.append(best_line)
-        else:
-            # If there's only one line in the group, keep it
-            filtered_lines.append(close_lines[0])
+        # Select the best line from the group and add it to filtered lines
+        best_line = _select_best_line(close_lines, keep_by_length, mean_angle)
+        filtered_lines.append(best_line)
     
     return filtered_lines
 
