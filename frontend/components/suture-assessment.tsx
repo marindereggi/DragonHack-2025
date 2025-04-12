@@ -54,11 +54,6 @@ export default function StitchMaster() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
   // Handle file upload
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
