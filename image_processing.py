@@ -337,7 +337,7 @@ def display_analysis_results(original_image, suture_analysis):
     ])
     
     # Add the summary
-    ax2.text(0, 0.98, '\n'.join(summary_text), fontsize=12, va='top', fontfamily='monospace')
+    ax2.text(0, 0.95, '\n'.join(summary_text), fontsize=12, va='top', fontfamily='monospace')
     
     # Create a tabular display of individual suture data
     table_data = []
@@ -367,7 +367,7 @@ def display_analysis_results(original_image, suture_analysis):
         cellText=table_data,
         colLabels=headers,
         loc='center',
-        bbox=[0, 0.1, 1, 0.45]  # [left, bottom, width, height]
+        bbox=[0, 0.2, 1, 0.45]
     )
     
     # Style the table
