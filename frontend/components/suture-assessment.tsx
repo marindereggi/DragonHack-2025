@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Upload, Loader2, Check, X, Bot, User, Send, Save, Microscope, Maximize2, RotateCcw } from "lucide-react"
+import { useChat, Message } from "@ai-sdk/react"
 
 // Types for our suture analysis
 type SutureAnalysis = {
@@ -33,13 +34,6 @@ type Suture = {
   issues?: string[]
 }
 
-type Message = {
-  id: string
-  content: string
-  sender: "user" | "ai"
-  timestamp: Date
-}
-
 export default function StitchMaster() {
   const router = useRouter()
   const [originalImage, setOriginalImage] = useState<string | null>(null)
@@ -48,9 +42,11 @@ export default function StitchMaster() {
   const [fileName, setFileName] = useState<string>("")
   const [analysis, setAnalysis] = useState<SutureAnalysis | null>(null)
   const [notes, setNotes] = useState<string>("")
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+    onError: (error) => {
+      console.error("Chat API error:", error);
+    }
+  });
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -72,6 +68,11 @@ export default function StitchMaster() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isFullScreen]);
+
+  // Add useEffect for debug logging
+  useEffect(() => {
+    console.log("Current messages:", messages);
+  }, [messages]);
 
   // Handle file upload
   const onDrop = (acceptedFiles: File[]) => {
@@ -198,32 +199,28 @@ export default function StitchMaster() {
             setProcessedImage(dataUrl);
             setAnalysis(data.analysis);
 
-            // Add initial AI messages
+            // Add initial AI messages for analysis feedback
             const initialMessages: Message[] = [
               {
                 id: "1",
+                role: "assistant",
                 content: "I've analyzed your suture image and here are the results:",
-                sender: "ai",
-                timestamp: new Date(),
               },
               {
                 id: "2",
+                role: "assistant",
                 content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
-                sender: "ai",
-                timestamp: new Date(),
               },
               {
                 id: "3",
+                role: "assistant",
                 content: data.analysis.feedback.join("\n"),
-                sender: "ai",
-                timestamp: new Date(),
               },
               {
                 id: "4",
+                role: "assistant",
                 content:
                   "Do you have any questions about the assessment or would you like specific advice on how to improve?",
-                sender: "ai",
-                timestamp: new Date(),
               },
             ];
 
@@ -235,11 +232,10 @@ export default function StitchMaster() {
           setMessages([
             {
               id: "error",
+              role: "assistant", 
               content: "An error occurred while analyzing the image. Please try uploading a different image.",
-              sender: "ai",
-              timestamp: new Date(),
             },
-          ]);
+          ] as Message[]);
         } finally {
           setIsProcessing(false);
         }
@@ -250,57 +246,10 @@ export default function StitchMaster() {
         setMessages([
           {
             id: "error",
+            role: "assistant", 
             content: "An error occurred while analyzing the image. Please try uploading a different image.",
-            sender: "ai",
-            timestamp: new Date(),
           },
-        ]);
-      });
-  }
-
-  // Handle sending a message in the chat
-  const handleSendMessage = () => {
-    if (!input.trim()) return
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: input,
-      sender: "user",
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setIsTyping(true)
-
-    // Send message to API
-    fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: input }),
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Error processing message');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setMessages((prev) => [...prev, data.message])
-        setIsTyping(false)
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setIsTyping(false)
-        setMessages(prev => [...prev, {
-          id: "error",
-          content: "An error occurred while processing the message. Please try again.",
-          sender: "ai",
-          timestamp: new Date(),
-        }]);
+        ] as Message[]);
       });
   }
 
@@ -582,23 +531,23 @@ export default function StitchMaster() {
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 ${msg.sender === "user" ? "justify-end" : "justify-start"
+                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"
                     }`}
                 >
-                  {msg.sender === "ai" && (
+                  {msg.role === "assistant" && (
                     <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0 flex items-center justify-center">
                       <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </Avatar>
                   )}
                   <div
-                    className={`rounded-lg p-3 max-w-[80%] ${msg.sender === "user"
+                    className={`rounded-lg p-3 max-w-[80%] ${msg.role === "user"
                       ? "bg-teal-600 dark:bg-teal-800 text-white"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
                       }`}
                   >
                     <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                   </div>
-                  {msg.sender === "user" && (
+                  {msg.role === "user" && (
                     <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
                       <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </Avatar>
@@ -606,7 +555,7 @@ export default function StitchMaster() {
                 </div>
               ))
             )}
-            {isTyping && (
+            {isLoading && (
               <div className="flex gap-3 justify-start">
                 <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0 flex items-center justify-center">
                   <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
@@ -623,26 +572,27 @@ export default function StitchMaster() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="flex gap-2 mt-auto">
+          <form onSubmit={(e) => {
+            console.log("Form submitted");
+            handleSubmit(e);
+          }} className="flex gap-2 mt-auto">
             <Input
               placeholder="Ask for feedback or advice..."
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSendMessage()
-                }
+              onChange={(e) => {
+                console.log("Input changed:", e.target.value);
+                handleInputChange(e);
               }}
-              disabled={!analysis}
+              disabled={!analysis || isLoading}
             />
             <Button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isTyping || !analysis}
+              type="submit"
+              disabled={!input.trim() || isLoading || !analysis}
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>
             </Button>
-          </div>
+          </form>
         </Card>
       </div>
 
