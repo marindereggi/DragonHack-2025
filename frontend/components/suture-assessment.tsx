@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { Upload, Loader2, Check, X, Bot, User, Send, Save, Microscope } from "lucide-react"
+import { Upload, Loader2, Check, X, Bot, User, Send, Save, Microscope, Maximize2, RotateCcw } from "lucide-react"
 
 // Types for our suture analysis
 type SutureAnalysis = {
@@ -53,6 +53,8 @@ export default function StitchMaster() {
   const [isTyping, setIsTyping] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null)
 
   // Handle file upload
   const onDrop = (acceptedFiles: File[]) => {
@@ -89,7 +91,7 @@ export default function StitchMaster() {
 
     // Create FormData for sending the image
     const formData = new FormData();
-    
+
     // Convert base64 data URL back to File object
     if (originalImage.startsWith('data:')) {
       const arr = originalImage.split(',');
@@ -97,11 +99,11 @@ export default function StitchMaster() {
       const bstr = atob(arr[arr.length - 1]);
       let n = bstr.length;
       const u8arr = new Uint8Array(n);
-      
+
       while (n--) {
         u8arr[n] = bstr.charCodeAt(n);
       }
-      
+
       const file = new File([u8arr], fileName, { type: mime });
       formData.append('image', file);
     }
@@ -111,108 +113,123 @@ export default function StitchMaster() {
       method: 'POST',
       body: formData
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Error analyzing sutures');
-      }
-      return response.json();
-    })
-    .then(data => {
-      try {
-        // Load image for display
-        const img = new window.Image();
-        img.crossOrigin = "anonymous";
-        img.src = data.originalImage;
-        
-        img.onload = () => {
-          // Set canvas dimensions
-          const canvas = canvasRef.current;
-          if (!canvas) {
-            throw new Error("Canvas is not available");
-          }
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error analyzing sutures');
+        }
+        return response.json();
+      })
+      .then(data => {
+        try {
+          // Load image for display
+          const img = new window.Image();
+          img.crossOrigin = "anonymous";
+          img.src = data.originalImage;
 
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
+          img.onload = () => {
+            // Set canvas dimensions
+            const canvas = canvasRef.current;
+            if (!canvas) {
+              throw new Error("Canvas is not available");
+            }
 
-          if (!ctx) {
-            throw new Error("Canvas context is not available");
-          }
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
 
-          // Draw the original image
-          ctx.drawImage(img, 0, 0, img.width, img.height);
+            if (!ctx) {
+              throw new Error("Canvas context is not available");
+            }
 
-          // Draw each suture
-          data.analysis.sutures.forEach((suture) => {
-            // Set line style based on whether the suture is good
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444"; // Green for good, red for bad
+            // Draw the original image
+            ctx.drawImage(img, 0, 0, img.width, img.height);
 
-            // Draw the suture line
-            ctx.beginPath();
-            ctx.moveTo(suture.x1, suture.y1);
-            ctx.lineTo(suture.x2, suture.y2);
-            ctx.stroke();
+            // Draw each suture
+            data.analysis.sutures.forEach((suture) => {
+              // Set line style based on whether the suture is good
+              ctx.lineWidth = 4;
+              ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444"; // Green for good, red for bad
 
-            // Draw endpoints
-            ctx.fillStyle = suture.isGood ? "#10b981" : "#ef4444";
-            ctx.beginPath();
-            ctx.arc(suture.x1, suture.y1, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(suture.x2, suture.y2, 5, 0, Math.PI * 2);
-            ctx.fill();
+              // Draw the suture line
+              ctx.beginPath();
+              ctx.moveTo(suture.x1, suture.y1);
+              ctx.lineTo(suture.x2, suture.y2);
+              ctx.stroke();
 
-            // Add suture number
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "white";
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 2;
-            const centerX = (suture.x1 + suture.x2) / 2;
-            const centerY = (suture.y1 + suture.y2) / 2;
-            ctx.strokeText(`${suture.id + 1}`, centerX, centerY);
-            ctx.fillText(`${suture.id + 1}`, centerX, centerY);
-          });
+              // Draw endpoints
+              ctx.fillStyle = suture.isGood ? "#10b981" : "#ef4444";
+              ctx.beginPath();
+              ctx.arc(suture.x1, suture.y1, 5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.arc(suture.x2, suture.y2, 5, 0, Math.PI * 2);
+              ctx.fill();
 
-          // Convert canvas to image
-          const dataUrl = canvas.toDataURL("image/png");
-          setProcessedImage(dataUrl);
-          setAnalysis(data.analysis);
+              // Add suture number
+              ctx.font = "16px Arial";
+              ctx.fillStyle = "white";
+              ctx.strokeStyle = "black";
+              ctx.lineWidth = 2;
+              const centerX = (suture.x1 + suture.x2) / 2;
+              const centerY = (suture.y1 + suture.y2) / 2;
+              ctx.strokeText(`${suture.id + 1}`, centerX, centerY);
+              ctx.fillText(`${suture.id + 1}`, centerX, centerY);
+            });
 
-          // Add initial AI messages
-          const initialMessages: Message[] = [
+            // Convert canvas to image
+            const dataUrl = canvas.toDataURL("image/png");
+            setProcessedImage(dataUrl);
+            setAnalysis(data.analysis);
+
+            // Add initial AI messages
+            const initialMessages: Message[] = [
+              {
+                id: "1",
+                content: "I've analyzed your suture image and here are the results:",
+                sender: "ai",
+                timestamp: new Date(),
+              },
+              {
+                id: "2",
+                content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
+                sender: "ai",
+                timestamp: new Date(),
+              },
+              {
+                id: "3",
+                content: data.analysis.feedback.join("\n"),
+                sender: "ai",
+                timestamp: new Date(),
+              },
+              {
+                id: "4",
+                content:
+                  "Do you have any questions about the assessment or would you like specific advice on how to improve?",
+                sender: "ai",
+                timestamp: new Date(),
+              },
+            ];
+
+            setMessages(initialMessages);
+          };
+        } catch (error) {
+          console.error("Error drawing sutures:", error);
+          // Add error message to chat
+          setMessages([
             {
-              id: "1",
-              content: "I've analyzed your suture image and here are the results:",
+              id: "error",
+              content: "An error occurred while analyzing the image. Please try uploading a different image.",
               sender: "ai",
               timestamp: new Date(),
             },
-            {
-              id: "2",
-              content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
-              sender: "ai",
-              timestamp: new Date(),
-            },
-            {
-              id: "3",
-              content: data.analysis.feedback.join("\n"),
-              sender: "ai",
-              timestamp: new Date(),
-            },
-            {
-              id: "4",
-              content:
-                "Do you have any questions about the assessment or would you like specific advice on how to improve?",
-              sender: "ai",
-              timestamp: new Date(),
-            },
-          ];
-
-          setMessages(initialMessages);
-        };
-      } catch (error) {
-        console.error("Error drawing sutures:", error);
-        // Add error message to chat
+          ]);
+        } finally {
+          setIsProcessing(false);
+        }
+      })
+      .catch(error => {
+        console.error("Error analyzing sutures:", error);
+        setIsProcessing(false);
         setMessages([
           {
             id: "error",
@@ -221,22 +238,7 @@ export default function StitchMaster() {
             timestamp: new Date(),
           },
         ]);
-      } finally {
-        setIsProcessing(false);
-      }
-    })
-    .catch(error => {
-      console.error("Error analyzing sutures:", error);
-      setIsProcessing(false);
-      setMessages([
-        {
-          id: "error",
-          content: "An error occurred while analyzing the image. Please try uploading a different image.",
-          sender: "ai",
-          timestamp: new Date(),
-        },
-      ]);
-    });
+      });
   }
 
   // Handle sending a message in the chat
@@ -263,26 +265,26 @@ export default function StitchMaster() {
       },
       body: JSON.stringify({ message: input }),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Error processing message');
-      }
-      return response.json();
-    })
-    .then(data => {
-      setMessages((prev) => [...prev, data.message])
-      setIsTyping(false)
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      setIsTyping(false)
-      setMessages(prev => [...prev, {
-        id: "error",
-        content: "An error occurred while processing the message. Please try again.",
-        sender: "ai",
-        timestamp: new Date(),
-      }]);
-    });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error processing message');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setMessages((prev) => [...prev, data.message])
+        setIsTyping(false)
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setIsTyping(false)
+        setMessages(prev => [...prev, {
+          id: "error",
+          content: "An error occurred while processing the message. Please try again.",
+          sender: "ai",
+          timestamp: new Date(),
+        }]);
+      });
   }
 
   // Save assessment to history
@@ -311,25 +313,35 @@ export default function StitchMaster() {
       },
       body: JSON.stringify(assessmentData),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Error saving assessment');
-      }
-      return response.json();
-    })
-    .then(data => {
-      setIsProcessing(false);
-      // In a real application we might redirect to the history page
-      alert("Assessment successfully saved!");
-      
-      // We can redirect to the history page
-      router.push('/history');
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      setIsProcessing(false);
-      alert("An error occurred while saving the assessment. Please try again.");
-    });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error saving assessment');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setIsProcessing(false);
+        // In a real application we might redirect to the history page
+        alert("Assessment successfully saved!");
+
+        // We can redirect to the history page
+        router.push('/history');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setIsProcessing(false);
+        alert("An error occurred while saving the assessment. Please try again.");
+      });
+  }
+
+  const openFullScreen = (imageUrl: string) => {
+    setFullScreenImage(imageUrl)
+    setIsFullScreen(true)
+  }
+
+  const closeFullScreen = () => {
+    setIsFullScreen(false)
+    setFullScreenImage(null)
   }
 
   return (
@@ -343,33 +355,61 @@ export default function StitchMaster() {
           </h2>
 
           <div
-            {...getRootProps()}
+            {...(processedImage ? {} : getRootProps())}
             className={cn(
-              "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors flex-grow",
-              isDragActive 
-                ? "border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20" 
-                : "border-gray-300 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-400",
+              "border-2 rounded-lg p-6 flex flex-col items-center justify-center transition-colors flex-grow",
+              processedImage
+                ? "border-gray-300 dark:border-gray-700 bg-gray-50/20 dark:bg-gray-900/10"  // Changed from teal to gray
+                : isDragActive
+                  ? "border-dashed border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20"
+                  : "border-dashed border-gray-300 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-400 cursor-pointer",
             )}
           >
-            <input {...getInputProps()} disabled={isProcessing} />
+            {!processedImage && <input {...getInputProps()} disabled={isProcessing} />}
 
             {originalImage && !processedImage ? (
-              <div className="relative w-full h-[400px] flex-shrink-0">
+              <div className="relative w-full h-[400px] flex-shrink-0 group">
                 <Image
                   src={originalImage || "/placeholder.svg"}
                   alt="Original suture image"
                   fill
                   className="object-contain"
                 />
+                <div className="absolute inset-0 flex items-start justify-end p-1">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFullScreen(originalImage);
+                    }}
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-40 hover:opacity-100 transition-opacity p-1 h-auto bg-black/10 backdrop-blur-sm"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5 text-white" />
+                  </Button>
+                </div>
               </div>
             ) : processedImage ? (
-              <div className="relative w-full h-[400px] flex-shrink-0">
+              <div className="relative w-full h-[400px] flex-shrink-0 group">
                 <Image
                   src={processedImage || "/placeholder.svg"}
                   alt="Analyzed suture image"
                   fill
                   className="object-contain"
                 />
+                <div className="absolute inset-0 flex items-start justify-end p-1">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFullScreen(processedImage);
+                    }}
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-40 hover:opacity-100 transition-opacity p-1 h-auto bg-black/10 backdrop-blur-sm"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5 text-white" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center h-[400px] flex flex-col items-center justify-center">
@@ -441,13 +481,12 @@ export default function StitchMaster() {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                   <div
-                    className={`h-2.5 rounded-full ${
-                      analysis.score >= 80 
-                        ? "bg-green-500 dark:bg-green-600" 
-                        : analysis.score >= 60 
-                          ? "bg-yellow-500 dark:bg-yellow-600" 
-                          : "bg-red-500 dark:bg-red-600"
-                    }`}
+                    className={`h-2.5 rounded-full ${analysis.score >= 80
+                      ? "bg-green-500 dark:bg-green-600"
+                      : analysis.score >= 60
+                        ? "bg-yellow-500 dark:bg-yellow-600"
+                        : "bg-red-500 dark:bg-red-600"
+                      }`}
                     style={{ width: `${analysis.score}%` }}
                   ></div>
                 </div>
@@ -466,8 +505,8 @@ export default function StitchMaster() {
                 />
               </div>
 
-              <Button 
-                onClick={saveAssessment} 
+              <Button
+                onClick={saveAssessment}
                 disabled={isProcessing}
                 className="w-full mt-2"
               >
@@ -484,6 +523,25 @@ export default function StitchMaster() {
                 )}
               </Button>
             </div>
+          )}
+
+          {processedImage && (
+            <Button
+              onClick={() => {
+                setProcessedImage(null);
+                setOriginalImage(null);
+                setAnalysis(null);
+                setMessages([]);
+              }}
+              variant="outline"
+              className="mt-4 text-sm"
+              size="sm"
+            >
+              <RotateCcw className="h-4 w-4 mr-2 text-gray-700 dark:text-gray-300" />
+              <div className="text-gray-700 dark:text-gray-300">
+              Clear
+              </div>
+            </Button>
           )}
 
           {/* Hidden canvas for image processing */}
@@ -507,9 +565,8 @@ export default function StitchMaster() {
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 ${
-                    msg.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex gap-3 ${msg.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
                 >
                   {msg.sender === "ai" && (
                     <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0 flex items-center justify-center">
@@ -517,11 +574,10 @@ export default function StitchMaster() {
                     </Avatar>
                   )}
                   <div
-                    className={`rounded-lg p-3 max-w-[80%] ${
-                      msg.sender === "user"
-                        ? "bg-teal-600 dark:bg-teal-800 text-white"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                    }`}
+                    className={`rounded-lg p-3 max-w-[80%] ${msg.sender === "user"
+                      ? "bg-teal-600 dark:bg-teal-800 text-white"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                      }`}
                   >
                     <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                   </div>
@@ -572,6 +628,28 @@ export default function StitchMaster() {
           </div>
         </Card>
       </div>
+
+      {/* Full screen image modal */}
+      {isFullScreen && fullScreenImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center" onClick={closeFullScreen}>
+          <div className="relative w-full h-full max-w-[90vw] max-h-[90vh]">
+            <Image
+              src={fullScreenImage}
+              alt="Full screen image"
+              fill
+              className="object-contain"
+            />
+            <Button
+              onClick={closeFullScreen}
+              size="sm"
+              variant="secondary"
+              className="absolute top-4 right-4 opacity-80 hover:opacity-100"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
