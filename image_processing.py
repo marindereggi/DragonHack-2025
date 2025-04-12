@@ -312,7 +312,7 @@ def display_analysis_results(original_image, suture_analysis):
     # Display the analysis data as text
     if "error" in suture_analysis:
         ax2.text(0, 0.98, f"ERROR: {suture_analysis['error']}", fontsize=14, va='top')
-        return fig
+        return
     
     # Summary section
     summary_text = [
@@ -373,7 +373,7 @@ def display_analysis_results(original_image, suture_analysis):
     # Style the table
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    
+    plt.tight_layout()
     return fig
 
 def _select_best_line(close_lines, keep_by_length, mean_angle=None):
