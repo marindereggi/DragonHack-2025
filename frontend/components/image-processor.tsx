@@ -21,23 +21,10 @@ type Message = {
 const initialAnalysis: Message[] = [
   {
     id: "1",
-    content: "I've analyzed your image and detected the following elements:",
+    content: "Upload an image for analysis.",
     sender: "ai",
     timestamp: new Date(),
-  },
-  {
-    id: "2",
-    content:
-      "• Image resolution: 1920x1080px\n• Format: JPEG\n• Color profile: sRGB\n• Dominant colors: #3a86ff, #8338ec, #ff006e",
-    sender: "ai",
-    timestamp: new Date(),
-  },
-  {
-    id: "3",
-    content: "Would you like me to suggest any enhancements for this image?",
-    sender: "ai",
-    timestamp: new Date(),
-  },
+  }
 ]
 
 export default function ImageProcessor() {
@@ -64,15 +51,78 @@ export default function ImageProcessor() {
     setIsProcessing(true)
     setOriginalImage(currentImage) // Store the original image
 
-    // Simulate processing delay
-    setTimeout(() => {
-      // In a real app, you would send the image to a backend for processing
-      // Here we're just using the same image as the "processed" version
-      // but in a real app, this would be replaced with the actual processed image
-      setIsProcessing(false)
-      setIsViewingOriginal(false)
-      setAnalysisComplete(true)
-    }, 2000)
+    // Create FormData for sending the image
+    const formData = new FormData();
+    
+    // Convert base64 data URL back to File object
+    if (currentImage.startsWith('data:')) {
+      const arr = currentImage.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1];
+      const bstr = atob(arr[arr.length - 1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      
+      const file = new File([u8arr], fileName, { type: mime });
+      formData.append('image', file);
+    }
+
+    // Send request to API
+    fetch('/api/process-image', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error processing image');
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Set image and initial messages
+      setCurrentImage(data.processedImage);
+      setIsProcessing(false);
+      setIsViewingOriginal(false);
+      setAnalysisComplete(true);
+
+      // Set initial messages based on analysis
+      setMessages([
+        {
+          id: "1",
+          content: "I've analyzed your image and detected the following elements:",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+        {
+          id: "2",
+          content:
+            `• Image resolution: ${data.analysis.resolution}\n• Format: ${data.analysis.format}\n• Color profile: ${data.analysis.colorProfile}\n• Dominant colors: ${data.analysis.dominantColors.join(', ')}`,
+          sender: "ai",
+          timestamp: new Date(),
+        },
+        {
+          id: "3",
+          content: "Would you like me to suggest any enhancements for this image?",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      setIsProcessing(false);
+      setMessages([
+        {
+          id: "error",
+          content: "An error occurred while processing the image. Please try again.",
+          sender: "ai",
+          timestamp: new Date(),
+        }
+      ]);
+    });
   }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -114,34 +164,34 @@ export default function ImageProcessor() {
     setInput("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      let responseContent = ""
-
-      if (input.toLowerCase().includes("enhance") || input.toLowerCase().includes("suggestion")) {
-        responseContent =
-          "I recommend increasing the contrast by 10%, applying a subtle sharpening filter, and adjusting the white balance to make the colors pop more."
-      } else if (input.toLowerCase().includes("color") || input.toLowerCase().includes("palette")) {
-        responseContent =
-          "The image contains a vibrant color palette with cool blues and purples contrasted with warm pinks. This creates a dynamic visual tension that draws the viewer's eye."
-      } else if (input.toLowerCase().includes("export") || input.toLowerCase().includes("format")) {
-        responseContent =
-          "For web use, I recommend exporting as WebP for the best balance of quality and file size. For print, use TIFF or high-quality PNG."
-      } else {
-        responseContent =
-          "I'm here to help with your image analysis. You can ask me about colors, composition, technical details, or enhancement suggestions."
+    // Send message to API
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: input }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error processing message');
       }
-
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        content: responseContent,
+      return response.json();
+    })
+    .then(data => {
+      setMessages((prev) => [...prev, data.message])
+      setIsTyping(false)
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      setIsTyping(false)
+      setMessages(prev => [...prev, {
+        id: "error",
+        content: "An error occurred while processing the message. Please try again.",
         sender: "ai",
         timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, aiMessage])
-      setIsTyping(false)
-    }, 1000)
+      }]);
+    });
   }
 
   return (

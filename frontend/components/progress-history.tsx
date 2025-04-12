@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,79 +9,102 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 import { Calendar, Clock, BarChart4, FileText, ArrowUpRight } from "lucide-react"
 
-// Sample data for progress history
-const pastAssessments = [
-  {
-    id: 1,
-    date: "2023-04-10",
-    time: "14:30",
-    score: 72,
-    parallelism: true,
-    spacing: false,
-    sutureCount: 6,
-    notes: "First attempt with the practice pad. Need to work on maintaining equal spacing between sutures.",
-    imageSrc: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    id: 2,
-    date: "2023-04-12",
-    time: "10:15",
-    score: 78,
-    parallelism: true,
-    spacing: false,
-    sutureCount: 7,
-    notes: "Improved on parallelism, but still struggling with consistent spacing.",
-    imageSrc: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    id: 3,
-    date: "2023-04-15",
-    time: "16:45",
-    score: 85,
-    parallelism: true,
-    spacing: true,
-    sutureCount: 8,
-    notes: "Much better today! Focused on marking equal distances before suturing.",
-    imageSrc: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    id: 4,
-    date: "2023-04-18",
-    time: "09:30",
-    score: 82,
-    parallelism: true,
-    spacing: true,
-    sutureCount: 6,
-    notes: "Tried a different technique for needle insertion. Good results but slightly slower.",
-    imageSrc: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    id: 5,
-    date: "2023-04-22",
-    time: "11:20",
-    score: 91,
-    parallelism: true,
-    spacing: true,
-    sutureCount: 7,
-    notes: "Best session yet! Focused on maintaining consistent hand position throughout.",
-    imageSrc: "/placeholder.svg?height=300&width=400",
-  },
-]
-
-// Data for charts
-const scoreData = pastAssessments.map((assessment) => ({
-  date: assessment.date.split("-").slice(1).join("/"), // Format as MM/DD
-  score: assessment.score,
-}))
-
-const attributeData = pastAssessments.map((assessment) => ({
-  date: assessment.date.split("-").slice(1).join("/"),
-  parallelism: assessment.parallelism ? 100 : 0,
-  spacing: assessment.spacing ? 100 : 0,
-}))
-
 export default function ProgressHistory() {
-  const [selectedAssessment, setSelectedAssessment] = useState(pastAssessments[pastAssessments.length - 1])
+  const [pastAssessments, setPastAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
+
+  // Pridobi zgodovino ob nalaganju komponente
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  // Funkcija za pridobivanje zgodovine iz API-ja
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/get-history');
+      
+      if (!response.ok) {
+        throw new Error('Error retrieving history');
+      }
+      
+      const data = await response.json();
+      
+      // Pretvori podatke v obliko, ki jo komponenta uporablja
+      const formattedHistory = data.history.map(item => ({
+        id: item.id,
+        date: new Date(item.timestamp).toLocaleDateString('en-US'),
+        time: new Date(item.timestamp).toLocaleTimeString('en-US', {
+          hour: '2-digit', 
+          minute: '2-digit'
+        }),
+        score: item.score,
+        parallelism: item.score > 75, // Za demonstracijo - v pravi aplikaciji bi uporabljali dejanske podatke
+        spacing: item.score > 80,     // Za demonstracijo - v pravi aplikaciji bi uporabljali dejanske podatke
+        sutureCount: Math.floor(Math.random() * 5) + 5, // Za demonstracijo
+        notes: "Assessment notes from the database would be here.",
+        imageSrc: item.imageUrl || "/placeholder.svg?height=300&width=400",
+      }));
+      
+      setPastAssessments(formattedHistory);
+      
+      // Izberi najnovejšo oceno kot privzeto
+      if (formattedHistory.length > 0) {
+        setSelectedAssessment(formattedHistory[formattedHistory.length - 1]);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error:', error);
+      setError("An error occurred while retrieving history. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  // Podatki za grafe
+  const scoreData = pastAssessments.map((assessment) => ({
+    date: assessment.date,
+    score: assessment.score,
+  }));
+
+  const attributeData = pastAssessments.map((assessment) => ({
+    date: assessment.date,
+    parallelism: assessment.parallelism ? 100 : 0,
+    spacing: assessment.spacing ? 100 : 0,
+  }));
+
+  // Prikaz nalaganja
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading history...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prikaz napake
+  if (error) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={fetchHistory} variant="outline">Try again</Button>
+      </div>
+    );
+  }
+
+  // Prikaz če ni zgodovine
+  if (pastAssessments.length === 0) {
+    return (
+      <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
+        <p className="text-gray-600 mb-4">No assessments saved yet. Complete an assessment to see it here.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

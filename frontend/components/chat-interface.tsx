@@ -18,23 +18,10 @@ type Message = {
 const initialAnalysis: Message[] = [
   {
     id: "1",
-    content: "I've analyzed your image and detected the following elements:",
+    content: "Welcome! I'm here to help with your image analysis. What would you like to know?",
     sender: "ai",
     timestamp: new Date(),
-  },
-  {
-    id: "2",
-    content:
-      "• Image resolution: 1920x1080px\n• Format: JPEG\n• Color profile: sRGB\n• Dominant colors: #3a86ff, #8338ec, #ff006e",
-    sender: "ai",
-    timestamp: new Date(),
-  },
-  {
-    id: "3",
-    content: "Would you like me to suggest any enhancements for this image?",
-    sender: "ai",
-    timestamp: new Date(),
-  },
+  }
 ]
 
 export default function ChatInterface() {
@@ -63,34 +50,34 @@ export default function ChatInterface() {
     setInput("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      let responseContent = ""
-
-      if (input.toLowerCase().includes("enhance") || input.toLowerCase().includes("suggestion")) {
-        responseContent =
-          "I recommend increasing the contrast by 10%, applying a subtle sharpening filter, and adjusting the white balance to make the colors pop more."
-      } else if (input.toLowerCase().includes("color") || input.toLowerCase().includes("palette")) {
-        responseContent =
-          "The image contains a vibrant color palette with cool blues and purples contrasted with warm pinks. This creates a dynamic visual tension that draws the viewer's eye."
-      } else if (input.toLowerCase().includes("export") || input.toLowerCase().includes("format")) {
-        responseContent =
-          "For web use, I recommend exporting as WebP for the best balance of quality and file size. For print, use TIFF or high-quality PNG."
-      } else {
-        responseContent =
-          "I'm here to help with your image analysis. You can ask me about colors, composition, technical details, or enhancement suggestions."
+    // Send message to API
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: input }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error processing message');
       }
-
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        content: responseContent,
+      return response.json();
+    })
+    .then(data => {
+      setMessages((prev) => [...prev, data.message])
+      setIsTyping(false)
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      setIsTyping(false)
+      setMessages(prev => [...prev, {
+        id: "error",
+        content: "An error occurred while processing the message. Please try again.",
         sender: "ai",
         timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, aiMessage])
-      setIsTyping(false)
-    }, 1000)
+      }]);
+    });
   }
 
   return (

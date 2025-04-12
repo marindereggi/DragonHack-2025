@@ -92,246 +92,156 @@ export default function StitchMaster() {
     setAnalysis(null)
     setMessages([])
 
-    // Load the image to get dimensions
-    const img = new window.Image()
-    img.crossOrigin = "anonymous"
+    // Create FormData for sending the image
+    const formData = new FormData();
+    
+    // Convert base64 data URL back to File object
+    if (originalImage.startsWith('data:')) {
+      const arr = originalImage.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1];
+      const bstr = atob(arr[arr.length - 1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      
+      const file = new File([u8arr], fileName, { type: mime });
+      formData.append('image', file);
+    }
 
-    img.onload = () => {
+    // Send request to API
+    fetch('/api/analyze-suture', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error analyzing sutures');
+      }
+      return response.json();
+    })
+    .then(data => {
       try {
-        // Generate simulated suture data
-        const simulatedAnalysis = simulateSutureAnalysis(img.width, img.height)
+        // Load image for display
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.src = data.originalImage;
+        
+        img.onload = () => {
+          // Set canvas dimensions
+          const canvas = canvasRef.current;
+          if (!canvas) {
+            throw new Error("Canvas is not available");
+          }
 
-        // Draw the sutures on a canvas
-        const canvas = canvasRef.current
-        if (!canvas) {
-          throw new Error("Canvas not available")
-        }
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
 
-        canvas.width = img.width
-        canvas.height = img.height
-        const ctx = canvas.getContext("2d")
+          if (!ctx) {
+            throw new Error("Canvas context is not available");
+          }
 
-        if (!ctx) {
-          throw new Error("Canvas context not available")
-        }
+          // Draw the original image
+          ctx.drawImage(img, 0, 0, img.width, img.height);
 
-        // Draw the original image
-        ctx.drawImage(img, 0, 0, img.width, img.height)
+          // Draw each suture
+          data.analysis.sutures.forEach((suture) => {
+            // Set line style based on whether the suture is good
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444"; // Green for good, red for bad
 
-        // Draw each suture
-        simulatedAnalysis.sutures.forEach((suture) => {
-          // Set line style based on whether it's a good suture
-          ctx.lineWidth = 4
-          ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444" // Green for good, red for bad
+            // Draw the suture line
+            ctx.beginPath();
+            ctx.moveTo(suture.x1, suture.y1);
+            ctx.lineTo(suture.x2, suture.y2);
+            ctx.stroke();
 
-          // Draw the suture line
-          ctx.beginPath()
-          ctx.moveTo(suture.x1, suture.y1)
-          ctx.lineTo(suture.x2, suture.y2)
-          ctx.stroke()
+            // Draw endpoints
+            ctx.fillStyle = suture.isGood ? "#10b981" : "#ef4444";
+            ctx.beginPath();
+            ctx.arc(suture.x1, suture.y1, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(suture.x2, suture.y2, 5, 0, Math.PI * 2);
+            ctx.fill();
 
-          // Draw endpoints
-          ctx.fillStyle = suture.isGood ? "#10b981" : "#ef4444"
-          ctx.beginPath()
-          ctx.arc(suture.x1, suture.y1, 5, 0, Math.PI * 2)
-          ctx.fill()
-          ctx.beginPath()
-          ctx.arc(suture.x2, suture.y2, 5, 0, Math.PI * 2)
-          ctx.fill()
+            // Add suture number
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            const centerX = (suture.x1 + suture.x2) / 2;
+            const centerY = (suture.y1 + suture.y2) / 2;
+            ctx.strokeText(`${suture.id + 1}`, centerX, centerY);
+            ctx.fillText(`${suture.id + 1}`, centerX, centerY);
+          });
 
-          // Add suture number
-          ctx.font = "16px Arial"
-          ctx.fillStyle = "white"
-          ctx.strokeStyle = "black"
-          ctx.lineWidth = 2
-          const centerX = (suture.x1 + suture.x2) / 2
-          const centerY = (suture.y1 + suture.y2) / 2
-          ctx.strokeText(`${suture.id + 1}`, centerX, centerY)
-          ctx.fillText(`${suture.id + 1}`, centerX, centerY)
-        })
+          // Convert canvas to image
+          const dataUrl = canvas.toDataURL("image/png");
+          setProcessedImage(dataUrl);
+          setAnalysis(data.analysis);
 
-        // Convert canvas to image
-        const dataUrl = canvas.toDataURL("image/png")
-        setProcessedImage(dataUrl)
-        setAnalysis(simulatedAnalysis)
+          // Add initial AI messages
+          const initialMessages: Message[] = [
+            {
+              id: "1",
+              content: "I've analyzed your suture image and here are the results:",
+              sender: "ai",
+              timestamp: new Date(),
+            },
+            {
+              id: "2",
+              content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
+              sender: "ai",
+              timestamp: new Date(),
+            },
+            {
+              id: "3",
+              content: data.analysis.feedback.join("\n"),
+              sender: "ai",
+              timestamp: new Date(),
+            },
+            {
+              id: "4",
+              content:
+                "Do you have any questions about the assessment or would you like specific advice on how to improve?",
+              sender: "ai",
+              timestamp: new Date(),
+            },
+          ];
 
-        // Add initial AI messages
-        const initialMessages: Message[] = [
-          {
-            id: "1",
-            content: "I've analyzed your suture practice image and here are the results:",
-            sender: "ai",
-            timestamp: new Date(),
-          },
-          {
-            id: "2",
-            content: `• Sutures detected: ${simulatedAnalysis.sutureCount}\n• Parallel sutures: ${simulatedAnalysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${simulatedAnalysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${simulatedAnalysis.score}/100`,
-            sender: "ai",
-            timestamp: new Date(),
-          },
-          {
-            id: "3",
-            content: simulatedAnalysis.feedback.join("\n"),
-            sender: "ai",
-            timestamp: new Date(),
-          },
-          {
-            id: "4",
-            content:
-              "Do you have any questions about the assessment or would you like specific advice on how to improve?",
-            sender: "ai",
-            timestamp: new Date(),
-          },
-        ]
-
-        setMessages(initialMessages)
+          setMessages(initialMessages);
+        };
       } catch (error) {
-        console.error("Error analyzing sutures:", error)
+        console.error("Error drawing sutures:", error);
         // Add error message to chat
         setMessages([
           {
             id: "error",
-            content: "I encountered an error while analyzing the image. Please try uploading a different image.",
+            content: "An error occurred while analyzing the image. Please try uploading a different image.",
             sender: "ai",
             timestamp: new Date(),
           },
-        ])
+        ]);
       } finally {
-        setIsProcessing(false)
+        setIsProcessing(false);
       }
-    }
-
-    img.onerror = () => {
-      console.error("Error loading image")
-      setIsProcessing(false)
+    })
+    .catch(error => {
+      console.error("Error analyzing sutures:", error);
+      setIsProcessing(false);
       setMessages([
         {
           id: "error",
-          content: "I couldn't load the image. Please try uploading a different image.",
+          content: "An error occurred while analyzing the image. Please try uploading a different image.",
           sender: "ai",
           timestamp: new Date(),
         },
-      ])
-    }
-
-    // Set the source after setting up the handlers
-    img.src = originalImage
-  }
-
-  // Simulate suture detection and analysis
-  const simulateSutureAnalysis = (width: number, height: number): SutureAnalysis => {
-    // Number of sutures to generate (5-10)
-    const sutureCount = 5 + Math.floor(Math.random() * 6)
-
-    // Generate sutures
-    const sutures: Suture[] = []
-    const baseY = height * 0.3 // Start around 30% from the top
-    const spacing = (height * 0.4) / sutureCount // Distribute in the middle 40% of the image
-
-    // Determine if we want to make them parallel and equally spaced based on random chance
-    const makeParallel = Math.random() < 0.5
-    const makeEquallySpaced = Math.random() < 0.5
-
-    // Base angle for parallel sutures
-    const baseAngle = Math.random() * 20 - 10 // -10 to 10 degrees
-
-    for (let i = 0; i < sutureCount; i++) {
-      // Calculate position
-      let y = baseY + i * spacing
-
-      // Add variation to spacing if not equally spaced
-      if (!makeEquallySpaced) {
-        const spacingVariation = spacing * 0.5 * (Math.random() * 2 - 1)
-        y += spacingVariation
-      }
-
-      // Calculate angle
-      let angle = baseAngle
-      if (!makeParallel) {
-        const angleVariation = 15 * (Math.random() * 2 - 1)
-        angle += angleVariation
-      }
-
-      // Calculate suture length
-      const sutureLength = 50 + Math.random() * 50
-
-      // Calculate endpoints based on angle and length
-      const radians = (angle * Math.PI) / 180
-      const halfLength = sutureLength / 2
-      const centerX = width / 2 + (Math.random() * width * 0.4 - width * 0.2)
-
-      const x1 = centerX - Math.cos(radians) * halfLength
-      const x2 = centerX + Math.cos(radians) * halfLength
-      const y1 = y - Math.sin(radians) * halfLength
-      const y2 = y + Math.sin(radians) * halfLength
-
-      // Determine if this is a "good" suture
-      const issues: string[] = []
-
-      if (!makeParallel) {
-        issues.push("Not parallel")
-      }
-
-      if (!makeEquallySpaced && i > 0) {
-        issues.push("Uneven spacing")
-      }
-
-      const isGood = issues.length === 0
-
-      sutures.push({
-        id: i,
-        x1,
-        y1,
-        x2,
-        y2,
-        isGood,
-        issues: issues.length > 0 ? issues : undefined,
-      })
-    }
-
-    // Calculate overall analysis results
-    const isParallel = makeParallel
-    const isEquallySpaced = makeEquallySpaced
-
-    // Calculate score (0-100)
-    let score = 60 + Math.floor(Math.random() * 41) // Base score between 60-100
-    if (!isParallel) score -= 15
-    if (!isEquallySpaced) score -= 15
-
-    // Generate feedback based on analysis
-    const feedback: string[] = []
-
-    if (isParallel && isEquallySpaced) {
-      feedback.push("Excellent work! Your sutures demonstrate good parallelism and consistent spacing.")
-      if (score < 90) {
-        feedback.push("Consider working on maintaining consistent tension across all sutures for even better results.")
-      }
-    } else {
-      if (!isParallel) {
-        feedback.push(
-          "Your sutures could be more parallel. Try using guide marks or focusing on maintaining a consistent angle.",
-        )
-      }
-      if (!isEquallySpaced) {
-        feedback.push(
-          "The spacing between your sutures is inconsistent. Practice maintaining equal distances between each suture.",
-        )
-      }
-    }
-
-    // Add a general improvement tip
-    feedback.push(
-      "Remember that consistent practice is key to developing muscle memory for precise suturing technique.",
-    )
-
-    return {
-      isParallel,
-      isEquallySpaced,
-      sutureCount,
-      sutures,
-      score,
-      feedback,
-    }
+      ]);
+    });
   }
 
   // Handle sending a message in the chat
@@ -350,44 +260,81 @@ export default function StitchMaster() {
     setInput("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      let responseContent = ""
-
-      if (input.toLowerCase().includes("improve") || input.toLowerCase().includes("better")) {
-        responseContent =
-          "To improve your suturing technique, focus on maintaining a consistent angle for each suture. Try using visual guides or marking the practice pad with equidistant dots. Also, maintain consistent tension on the thread throughout the procedure."
-      } else if (input.toLowerCase().includes("parallel") || input.toLowerCase().includes("angle")) {
-        responseContent =
-          "For better parallelism, try to maintain the same wrist position for each suture. It can help to place your non-dominant hand in a fixed position as a reference point. Practice with deliberate, slow movements until you develop muscle memory."
-      } else if (input.toLowerCase().includes("spacing") || input.toLowerCase().includes("distance")) {
-        responseContent =
-          "To achieve equal spacing, you can pre-mark your practice pad with equidistant points. Alternatively, use the width of your needle holder as a measuring tool between sutures. Consistent spacing is crucial for both aesthetic results and proper wound healing."
-      } else if (input.toLowerCase().includes("score") || input.toLowerCase().includes("assessment")) {
-        responseContent =
-          "Your score reflects several factors: parallelism of sutures, consistent spacing, proper depth, and tension. The computer vision algorithm analyzes these elements to provide an objective assessment of your technique."
-      } else {
-        responseContent =
-          "I'm here to help with your suturing technique. You can ask about specific aspects like improving parallelism, maintaining equal spacing, or general suturing best practices."
+    // Send message to API
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: input }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error processing message');
       }
-
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        content: responseContent,
+      return response.json();
+    })
+    .then(data => {
+      setMessages((prev) => [...prev, data.message])
+      setIsTyping(false)
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      setIsTyping(false)
+      setMessages(prev => [...prev, {
+        id: "error",
+        content: "An error occurred while processing the message. Please try again.",
         sender: "ai",
         timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, aiMessage])
-      setIsTyping(false)
-    }, 1000)
+      }]);
+    });
   }
 
   // Save assessment to history
   const saveAssessment = () => {
-    // In a real app, this would save to a database
-    // For this demo, we'll just navigate to the history page
-    router.push("/history")
+    if (!analysis || !processedImage) return
+
+    setIsProcessing(true)
+
+    // Prepare data for saving
+    const assessmentData = {
+      assessment: {
+        timestamp: new Date().toISOString(),
+        filename: fileName,
+        image: processedImage,
+        analysis: analysis,
+        notes: notes,
+        messages: messages,
+      }
+    }
+
+    // Send request to API
+    fetch('/api/save-history', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(assessmentData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error saving assessment');
+      }
+      return response.json();
+    })
+    .then(data => {
+      setIsProcessing(false);
+      // In a real application we might redirect to the history page
+      alert("Assessment successfully saved!");
+      
+      // We can redirect to the history page
+      router.push('/history');
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      setIsProcessing(false);
+      alert("An error occurred while saving the assessment. Please try again.");
+    });
   }
 
   return (
