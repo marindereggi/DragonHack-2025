@@ -505,7 +505,7 @@ export default function StitchMaster() {
           <div className="flex-grow mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto flex flex-col gap-4">
             {messages.length === 0 ? (
               <div className="text-center py-10 flex-grow flex flex-col justify-center">
-                <Bot className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-600 mb-2" />
+                <Bot className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-600 mb-2 flex-shrink-0" />
                 <p className="text-gray-500 dark:text-gray-400">Upload an image to get feedback from the AI assistant.</p>
               </div>
             ) : (
@@ -517,7 +517,7 @@ export default function StitchMaster() {
                   }`}
                 >
                   {msg.sender === "ai" && (
-                    <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0">
+                    <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0 flex items-center justify-center">
                       <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </Avatar>
                   )}
@@ -531,7 +531,7 @@ export default function StitchMaster() {
                     <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                   </div>
                   {msg.sender === "user" && (
-                    <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700 shrink-0">
+                    <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
                       <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </Avatar>
                   )}
@@ -540,7 +540,7 @@ export default function StitchMaster() {
             )}
             {isTyping && (
               <div className="flex gap-3 justify-start">
-                <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0">
+                <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0 flex items-center justify-center">
                   <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                 </Avatar>
                 <div className="rounded-lg p-3 bg-gray-100 dark:bg-gray-800">
