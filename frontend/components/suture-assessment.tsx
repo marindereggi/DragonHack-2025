@@ -359,7 +359,7 @@ export default function StitchMaster() {
             <input {...getInputProps()} disabled={isProcessing} />
 
             {originalImage && !processedImage ? (
-              <div className="relative w-full h-full flex-grow min-h-[300px]">
+              <div className="relative w-full h-[400px] flex-shrink-0">
                 <Image
                   src={originalImage || "/placeholder.svg"}
                   alt="Original suture image"
@@ -368,7 +368,7 @@ export default function StitchMaster() {
                 />
               </div>
             ) : processedImage ? (
-              <div className="relative w-full h-full flex-grow min-h-[300px]">
+              <div className="relative w-full h-[400px] flex-shrink-0">
                 <Image
                   src={processedImage || "/placeholder.svg"}
                   alt="Analyzed suture image"
@@ -377,7 +377,7 @@ export default function StitchMaster() {
                 />
               </div>
             ) : (
-              <div className="text-center">
+              <div className="text-center h-[400px] flex flex-col items-center justify-center">
                 <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                   {isDragActive ? "Drop the image here" : "Drag & drop a suture image here"}
