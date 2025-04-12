@@ -339,9 +339,9 @@ export default function StitchMaster() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-[600px]">
         {/* Left Column - Image Upload and Analysis */}
-        <Card className="p-6">
+        <Card className="p-6 flex flex-col h-full">
           <h2 className="text-xl font-semibold mb-4 text-teal-800 dark:text-teal-300 flex items-center gap-2">
             <Microscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             Suture Image Analysis
@@ -350,17 +350,16 @@ export default function StitchMaster() {
           <div
             {...getRootProps()}
             className={cn(
-              "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors",
+              "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors flex-grow",
               isDragActive 
                 ? "border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20" 
                 : "border-gray-300 dark:border-gray-700 hover:border-teal-400 dark:hover:border-teal-400",
-              "h-64",
             )}
           >
             <input {...getInputProps()} disabled={isProcessing} />
 
             {originalImage && !processedImage ? (
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full flex-grow min-h-[300px]">
                 <Image
                   src={originalImage || "/placeholder.svg"}
                   alt="Original suture image"
@@ -369,7 +368,7 @@ export default function StitchMaster() {
                 />
               </div>
             ) : processedImage ? (
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full flex-grow min-h-[300px]">
                 <Image
                   src={processedImage || "/placeholder.svg"}
                   alt="Analyzed suture image"
@@ -407,7 +406,7 @@ export default function StitchMaster() {
           )}
 
           {analysis && (
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-4 flex-grow overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
                   <div className="flex justify-between items-center">
@@ -497,15 +496,15 @@ export default function StitchMaster() {
         </Card>
 
         {/* Right Column - AI Chat */}
-        <Card className="p-6">
+        <Card className="p-6 flex flex-col h-full">
           <h2 className="text-xl font-semibold mb-4 text-teal-800 dark:text-teal-300 flex items-center gap-2">
             <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             AI Assistant
           </h2>
 
-          <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-[400px] overflow-y-auto flex flex-col gap-4">
+          <div className="flex-grow mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto flex flex-col gap-4">
             {messages.length === 0 ? (
-              <div className="text-center py-10">
+              <div className="text-center py-10 flex-grow flex flex-col justify-center">
                 <Bot className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-600 mb-2" />
                 <p className="text-gray-500 dark:text-gray-400">Upload an image to get feedback from the AI assistant.</p>
               </div>
@@ -518,7 +517,7 @@ export default function StitchMaster() {
                   }`}
                 >
                   {msg.sender === "ai" && (
-                    <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900">
+                    <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0">
                       <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </Avatar>
                   )}
@@ -532,7 +531,7 @@ export default function StitchMaster() {
                     <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                   </div>
                   {msg.sender === "user" && (
-                    <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700">
+                    <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700 shrink-0">
                       <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </Avatar>
                   )}
@@ -541,7 +540,7 @@ export default function StitchMaster() {
             )}
             {isTyping && (
               <div className="flex gap-3 justify-start">
-                <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900">
+                <Avatar className="h-8 w-8 bg-teal-100 dark:bg-teal-900 shrink-0">
                   <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                 </Avatar>
                 <div className="rounded-lg p-3 bg-gray-100 dark:bg-gray-800">
@@ -553,9 +552,10 @@ export default function StitchMaster() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-auto">
             <Input
               placeholder="Ask for feedback or advice..."
               value={input}
@@ -570,7 +570,6 @@ export default function StitchMaster() {
             <Button
               onClick={handleSendMessage}
               disabled={!input.trim() || isTyping || !analysis}
-              className="bg-teal-600 hover:bg-teal-700"
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>
