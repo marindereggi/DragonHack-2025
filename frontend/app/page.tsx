@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import SutureAssessment from "@/components/suture-assessment"
+import StitchMaster from "@/components/suture-assessment"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 
@@ -20,7 +20,7 @@ export default function Home() {
           </p>
         </section>
 
-        <SutureAssessment />
+        <StitchMaster />
       </main>
       <Footer />
     </div>

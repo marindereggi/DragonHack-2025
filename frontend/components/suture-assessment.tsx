@@ -40,7 +40,7 @@ type Message = {
   timestamp: Date
 }
 
-export default function SutureAssessment() {
+export default function StitchMaster() {
   const router = useRouter()
   const [originalImage, setOriginalImage] = useState<string | null>(null)
   const [processedImage, setProcessedImage] = useState<string | null>(null)
@@ -93,7 +93,7 @@ export default function SutureAssessment() {
     setMessages([])
 
     // Load the image to get dimensions
-    const img = new Image()
+    const img = new window.Image()
     img.crossOrigin = "anonymous"
 
     img.onload = () => {
@@ -156,7 +156,7 @@ export default function SutureAssessment() {
         setAnalysis(simulatedAnalysis)
 
         // Add initial AI messages
-        const initialMessages = [
+        const initialMessages: Message[] = [
           {
             id: "1",
             content: "I've analyzed your suture practice image and here are the results:",

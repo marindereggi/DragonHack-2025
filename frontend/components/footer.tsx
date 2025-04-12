@@ -9,10 +9,10 @@ export default function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Stethoscope className="h-6 w-6 text-teal-600" />
-              <span className="font-bold text-xl text-teal-800">SutureAssess</span>
+              <span className="font-bold text-xl text-teal-800">StitchMaster</span>
             </Link>
             <p className="text-gray-600 text-sm">
-              Advanced suture assessment and feedback powered by computer vision technology.
+              An educational tool that uses computer vision technology to assess suturing techniques.
             </p>
           </div>
 
@@ -34,11 +34,11 @@ export default function Footer() {
                   Best Practices
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="#" className="text-gray-600 hover:text-teal-700">
                   Support
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
 
@@ -47,22 +47,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="#" className="text-gray-600 hover:text-teal-700">
-                  Our Technology
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-teal-700">
-                  Research
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-teal-700">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-teal-700">
-                  Terms
+                  Team
                 </Link>
               </li>
             </ul>
@@ -70,7 +55,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} SutureAssess. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} StitchMaster. All rights reserved.</p>
           <p className="mt-1">
             This tool is designed for educational purposes only and should be used under proper supervision.
           </p>
