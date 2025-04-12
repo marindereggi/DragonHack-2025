@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
-import { Calendar, Clock, BarChart4, FileText, ArrowUpRight, History, LayoutDashboard, Pencil } from "lucide-react"
+import { Calendar, Clock, BarChart4, FileText, ArrowUpRight, History, LayoutDashboard, Pencil, ImageIcon } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { ClipboardX } from "lucide-react"
 
@@ -29,11 +29,17 @@ export default function ProgressHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Pridobi zgodovino ob nalaganju komponente
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  // Reset image error state when selecting a new assessment
+  useEffect(() => {
+    setImageError(false);
+  }, [selectedAssessment]);
 
   // Funkcija za pridobivanje zgodovine iz API-ja
   const fetchHistory = async () => {
@@ -347,12 +353,20 @@ export default function ProgressHistory() {
               <h3 className="font-medium text-foreground mb-4">Assessment Details</h3>
 
               <div className="relative h-48 mb-4 rounded overflow-hidden">
-                <Image
-                  src={selectedAssessment.imageSrc || "/placeholder.svg"}
-                  alt={`Suture assessment from ${selectedAssessment.date}`}
-                  fill
-                  className="object-cover"
-                />
+                {imageError ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-muted/30 dark:bg-muted/10">
+                    <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Image could not be loaded</p>
+                  </div>
+                ) : (
+                  <Image
+                    src={selectedAssessment.imageSrc || "/placeholder.svg"}
+                    alt={`Suture assessment from ${selectedAssessment.date}`}
+                    fill
+                    className="object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                )}
               </div>
 
               <div className="space-y-4">
