@@ -507,14 +507,14 @@ export default function StitchMaster() {
         </Card>
 
         {/* Right Column - AI Chat */}
-        <div className="h-full">
+        <div className="h-auto lg:h-full">
           <Card className="p-6 flex flex-col h-full">
             <h2 className="text-xl font-semibold mb-4 text-teal-800 dark:text-teal-300 flex items-center gap-2">
               <Bot className="h-5 w-5 text-teal-600 dark:text-teal-400" />
               AI Assistant
             </h2>
 
-            <div className="flex-grow mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto flex flex-col gap-4 h-0 min-h-0">
+            <div className="flex-grow mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 flex flex-col gap-4 lg:overflow-y-auto lg:h-0 lg:min-h-0">
               {messages.length === 0 ? (
                 <div className="text-center py-10 flex-grow flex flex-col justify-center">
                   <Bot className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-600 mb-2 flex-shrink-0" />
