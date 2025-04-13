@@ -62,6 +62,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@ai-sdk/google": "^1.2.10",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
