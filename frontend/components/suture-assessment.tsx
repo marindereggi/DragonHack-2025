@@ -13,6 +13,7 @@ import { Avatar } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Upload, Loader2, Check, X, Bot, User, Send, Save, Microscope, Maximize2, RotateCcw } from "lucide-react"
 import { useChat, Message } from "@ai-sdk/react"
+import ReactMarkdown from "react-markdown"
 
 // Types for our suture analysis
 type SutureAnalysis = {
@@ -42,11 +43,7 @@ export default function StitchMaster() {
   const [fileName, setFileName] = useState<string>("")
   const [analysis, setAnalysis] = useState<SutureAnalysis | null>(null)
   const [notes, setNotes] = useState<string>("")
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    onError: (error) => {
-      console.error("Chat API error:", error);
-    }
-  });
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat();
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -68,11 +65,6 @@ export default function StitchMaster() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isFullScreen]);
-
-  // Add useEffect for debug logging
-  useEffect(() => {
-    console.log("Current messages:", messages);
-  }, [messages]);
 
   // Handle file upload
   const onDrop = (acceptedFiles: File[]) => {
@@ -227,7 +219,6 @@ export default function StitchMaster() {
             setMessages(initialMessages);
           };
         } catch (error) {
-          console.error("Error drawing sutures:", error);
           // Add error message to chat
           setMessages([
             {
@@ -241,7 +232,6 @@ export default function StitchMaster() {
         }
       })
       .catch(error => {
-        console.error("Error analyzing sutures:", error);
         setIsProcessing(false);
         setMessages([
           {
@@ -294,7 +284,6 @@ export default function StitchMaster() {
         router.push('/history');
       })
       .catch(error => {
-        console.error('Error:', error);
         setIsProcessing(false);
         alert("An error occurred while saving the assessment. Please try again.");
       });
@@ -540,12 +529,36 @@ export default function StitchMaster() {
                     </Avatar>
                   )}
                   <div
-                    className={`rounded-lg p-3 max-w-[80%] ${msg.role === "user"
+                    className={`rounded-lg p-2 max-w-[80%] ${msg.role === "user"
                       ? "bg-teal-600 dark:bg-teal-800 text-white"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
                       }`}
                   >
-                    <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+                    {msg.role === "user" ? (
+                      <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+                    ) : (
+                      <div className="whitespace-pre-wrap text-sm overflow-hidden">
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            h1: ({ children }) => <h1 className="text-xl font-bold mb-3">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-md font-bold mb-2">{children}</h3>,
+                            ul: ({ children }) => <div className="pl-4 mb-3 flex flex-col gap-1">{children}</div>,
+                            ol: ({ children }) => <div className="pl-4 mb-3 flex flex-col gap-1">{children}</div>,
+                            li: ({ children }) => <div className="flex gap-2 items-baseline"><span className="w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-400 mt-1.5 flex-shrink-0"></span><div>{children}</div></div>,
+                            code: ({ children }) => <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
+                            pre: ({ children }) => <pre className="bg-gray-200 dark:bg-gray-700 p-2 rounded-md my-2 overflow-x-auto text-sm font-mono">{children}</pre>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 border-teal-500 dark:border-teal-400 pl-3 italic my-2">{children}</blockquote>,
+                            a: ({ href, children }) => <a href={href} className="text-teal-600 dark:text-teal-400 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                            strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                   {msg.role === "user" && (
                     <Avatar className="h-8 w-8 bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
@@ -572,17 +585,11 @@ export default function StitchMaster() {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={(e) => {
-            console.log("Form submitted");
-            handleSubmit(e);
-          }} className="flex gap-2 mt-auto">
+          <form onSubmit={handleSubmit} className="flex gap-2 mt-auto">
             <Input
               placeholder="Ask for feedback or advice..."
               value={input}
-              onChange={(e) => {
-                console.log("Input changed:", e.target.value);
-                handleInputChange(e);
-              }}
+              onChange={handleInputChange}
               disabled={!analysis || isLoading}
             />
             <Button
