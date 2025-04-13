@@ -92,7 +92,7 @@ export default function StitchMaster() {
 
   // Simulate suture detection and analysis
   const analyzeSutures = () => {
-    if (!originalImage || !canvasRef.current) return
+    if (!originalImage) return
 
     setIsProcessing(true)
     setProcessedImage(null)
@@ -131,94 +131,48 @@ export default function StitchMaster() {
       })
       .then(data => {
         try {
-          // Load image for display
-          const img = new window.Image();
-          img.crossOrigin = "anonymous";
-          img.src = data.originalImage;
+          console.log('Response from API:', data);
+          
+          // Use the processed image directly from the API
+          if (data.processedImage) {
+            setProcessedImage(data.processedImage);
+          } else {
+            // Fallback to original image if no processed image
+            setProcessedImage(data.originalImage);
+            console.warn('No processed image received from API');
+          }
+          
+          // Set the analysis data
+          setAnalysis(data.analysis);
 
-          img.onload = () => {
-            // Set canvas dimensions
-            const canvas = canvasRef.current;
-            if (!canvas) {
-              throw new Error("Canvas is not available");
-            }
+          // Add initial AI messages for analysis feedback
+          const initialMessages: Message[] = [
+            {
+              id: "1",
+              role: "assistant",
+              content: "I've analyzed your suture image and here are the results:",
+            },
+            {
+              id: "2",
+              role: "assistant",
+              content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
+            },
+            {
+              id: "3",
+              role: "assistant",
+              content: data.analysis.feedback.join("\n"),
+            },
+            {
+              id: "4",
+              role: "assistant",
+              content:
+                "Do you have any questions about the assessment or would you like specific advice on how to improve?",
+            },
+          ];
 
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-
-            if (!ctx) {
-              throw new Error("Canvas context is not available");
-            }
-
-            // Draw the original image
-            ctx.drawImage(img, 0, 0, img.width, img.height);
-
-            // Draw each suture
-            data.analysis.sutures.forEach((suture: Suture) => {
-              // Set line style based on whether the suture is good
-              ctx.lineWidth = 4;
-              ctx.strokeStyle = suture.isGood ? "#10b981" : "#ef4444"; // Green for good, red for bad
-
-              // Draw the suture line
-              ctx.beginPath();
-              ctx.moveTo(suture.x1, suture.y1);
-              ctx.lineTo(suture.x2, suture.y2);
-              ctx.stroke();
-
-              // Draw endpoints
-              ctx.fillStyle = suture.isGood ? "#10b981" : "#ef4444";
-              ctx.beginPath();
-              ctx.arc(suture.x1, suture.y1, 5, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.arc(suture.x2, suture.y2, 5, 0, Math.PI * 2);
-              ctx.fill();
-
-              // Add suture number
-              ctx.font = "16px Arial";
-              ctx.fillStyle = "white";
-              ctx.strokeStyle = "black";
-              ctx.lineWidth = 2;
-              const centerX = (suture.x1 + suture.x2) / 2;
-              const centerY = (suture.y1 + suture.y2) / 2;
-              ctx.strokeText(`${suture.id + 1}`, centerX, centerY);
-              ctx.fillText(`${suture.id + 1}`, centerX, centerY);
-            });
-
-            // Convert canvas to image
-            const dataUrl = canvas.toDataURL("image/png");
-            setProcessedImage(dataUrl);
-            setAnalysis(data.analysis);
-
-            // Add initial AI messages for analysis feedback
-            const initialMessages: Message[] = [
-              {
-                id: "1",
-                role: "assistant",
-                content: "I've analyzed your suture image and here are the results:",
-              },
-              {
-                id: "2",
-                role: "assistant",
-                content: `• Sutures detected: ${data.analysis.sutureCount}\n• Parallel sutures: ${data.analysis.isParallel ? "Yes" : "No"}\n• Equal spacing: ${data.analysis.isEquallySpaced ? "Yes" : "No"}\n• Overall score: ${data.analysis.score}/100`,
-              },
-              {
-                id: "3",
-                role: "assistant",
-                content: data.analysis.feedback.join("\n"),
-              },
-              {
-                id: "4",
-                role: "assistant",
-                content:
-                  "Do you have any questions about the assessment or would you like specific advice on how to improve?",
-              },
-            ];
-
-            setMessages(initialMessages);
-          };
+          setMessages(initialMessages);
         } catch (error) {
+          console.error('Error processing API response:', error);
           // Add error message to chat
           setMessages([
             {
@@ -232,6 +186,7 @@ export default function StitchMaster() {
         }
       })
       .catch(error => {
+        console.error('API request error:', error);
         setIsProcessing(false);
         setMessages([
           {
@@ -501,7 +456,7 @@ export default function StitchMaster() {
               </Button>
             )}
 
-            {/* Hidden canvas for image processing */}
+            {/* Hidden canvas for image processing - no longer used for drawing */}
             <canvas ref={canvasRef} className="hidden" />
           </div>
         </Card>
