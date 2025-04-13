@@ -3,9 +3,15 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'StitchMaster',
+  description: 'AI-powered suture training assistant',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: { url: '/favicon.svg', type: 'image/svg+xml' },
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
