@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import uuid
-import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import image_processing
@@ -12,12 +10,6 @@ import base64
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 @app.route('/process_image', methods=['POST'])
 def process_image():
     if 'image' not in request.files:
@@ -27,41 +19,38 @@ def process_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    if file and allowed_file(file.filename):
-        # Read the image directly from the uploaded file into memory
-        file_bytes = file.read()
-        nparr = np.frombuffer(file_bytes, np.uint8)
-        original_image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        # Convert from BGR to RGB (OpenCV loads as BGR, but our processor expects RGB)
-        original_image = cv2.cvtColor(original_image_bgr, cv2.COLOR_BGR2RGB)
-        
-        # Process image directly (you'll need to modify analyze_image() to accept an image array)
-        _, original_image, suture_analysis = image_processing.analyze_image(original_image)
-        
-        # Create visualization image with analysis results
-        if "error" not in suture_analysis:
-            # Generate visualization
-            visualized = image_processing.visualize_suture_analysis(original_image, suture_analysis)
-            
-            # Convert directly to base64
-            visualized_bgr = cv2.cvtColor(visualized, cv2.COLOR_RGB2BGR)
-            _, buffer = cv2.imencode('.png', visualized_bgr)
-            result_base64 = base64.b64encode(buffer).decode('utf-8')
-        else:
-            result_base64 = None
-        
-        # Create response data
-        response = {
-            'timestamp': datetime.now().isoformat(),
-            'original_filename': secure_filename(file.filename),
-            'result_image_base64': result_base64,
-            'suture_analysis': sanitize_for_json(suture_analysis),
-        }
-        
-        return jsonify(response), 200
+    # Read the image directly from the uploaded file into memory
+    file_bytes = file.read()
+    nparr = np.frombuffer(file_bytes, np.uint8)
+    original_image_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     
-    return jsonify({'error': 'File type not allowed'}), 400
+    # Convert from BGR to RGB (OpenCV loads as BGR, but our processor expects RGB)
+    original_image = cv2.cvtColor(original_image_bgr, cv2.COLOR_BGR2RGB)
+    
+    # Process image directly (you'll need to modify analyze_image() to accept an image array)
+    _, original_image, suture_analysis = image_processing.analyze_image(original_image)
+    
+    # Create visualization image with analysis results
+    if "error" not in suture_analysis:
+        # Generate visualization
+        visualized = image_processing.visualize_suture_analysis(original_image, suture_analysis)
+        
+        # Convert directly to base64
+        visualized_bgr = cv2.cvtColor(visualized, cv2.COLOR_RGB2BGR)
+        _, buffer = cv2.imencode('.png', visualized_bgr)
+        result_base64 = base64.b64encode(buffer).decode('utf-8')
+    else:
+        result_base64 = None
+    
+    # Create response data
+    response = {
+        'timestamp': datetime.now().isoformat(),
+        'original_filename': secure_filename(file.filename),
+        'result_image_base64': result_base64,
+        'suture_analysis': sanitize_for_json(suture_analysis),
+    }
+    
+    return jsonify(response), 200
 
 # Add a helper function to sanitize objects for JSON serialization
 def sanitize_for_json(obj):
