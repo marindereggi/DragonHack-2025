@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 INPUT_IMAGE_PATH = "IMG_4181.jpg"
 
 # Color detection parameters
-SATURATION_THRESHOLD = 20                    # Minimum saturation for green detection (10-50)
-VALUE_THRESHOLD = 30                         # Minimum brightness for green detection (10-50)
+SATURATION_THRESHOLD = 20                    # Minimum saturation for detection (10-50)
+VALUE_THRESHOLD = 30                         # Minimum brightness for detection (10-50)
 
 # Shape filtering parameters
 MIN_SIZE = 10                                # Minimum size of objects to keep
@@ -46,18 +46,18 @@ def load_image(image_path):
     return img
 
 
-def extract_green_sutures(image, saturation_threshold=SATURATION_THRESHOLD, 
+def extract_sutures(image, saturation_threshold=SATURATION_THRESHOLD, 
                         value_threshold=VALUE_THRESHOLD):
     """
-    Extract green sutures using color thresholding.
+    Extract sutures using color thresholding.
     
     Args:
         image (numpy.ndarray): Input RGB image
-        saturation_threshold (int): Minimum saturation for green detection
-        value_threshold (int): Minimum brightness for green detection
+        saturation_threshold (int): Minimum saturation for detection
+        value_threshold (int): Minimum brightness for detection
         
     Returns:
-        numpy.ndarray: Binary mask of detected green sutures
+        numpy.ndarray: Binary mask of detected sutures
     """
     # Convert to HSV color space for better color segmentation
     hsv_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -65,49 +65,48 @@ def extract_green_sutures(image, saturation_threshold=SATURATION_THRESHOLD,
     # Extract HSV channels
     h, s, v = cv2.split(hsv_image)
     
-    # Define green hue range in HSV (approximately 60-170 degrees, scaled to 0-180 in OpenCV)
-    # This range covers from yellow-green to bluish-green
-    green_lower_hue = 40
-    green_upper_hue = 80
+    # Define hue range in HSV (approximately 60-170 degrees, scaled to 0-180 in OpenCV)
+    lower_hue = 40
+    upper_hue = 80
     
-    # Create binary mask for green hue
-    mask_green_hue = cv2.inRange(h, green_lower_hue, green_upper_hue)
+    # Create binary mask for hue values
+    mask_hue = cv2.inRange(h, lower_hue, upper_hue)
     
-    # Filter by minimum saturation to avoid detecting white/gray areas as green
+    # Filter by minimum saturation to avoid detecting white/gray areas
     mask_saturation = s > saturation_threshold
     
     # Filter by minimum value/brightness to avoid very dark areas
     mask_value = v > value_threshold
     
     # Combine masks
-    green_mask = mask_green_hue & mask_saturation & mask_value
+    mask = mask_hue & mask_saturation & mask_value
     
     # Convert to uint8 format (0-255)
-    green_mask = green_mask.astype(np.uint8) * 255
+    mask = mask.astype(np.uint8) * 255
     
-    return green_mask
+    return mask
 
 
-def compute_green_dominance(image):
+def compute_dominance(image):
     """
-    Compute a mask where green channel is dominant compared to red and blue.
+    Compute a mask where suture channel is dominant compared to red and blue.
     
     Args:
         image (numpy.ndarray): Input RGB image
         
     Returns:
-        numpy.ndarray: Mask where green is the dominant color
+        numpy.ndarray: Mask where suture is the dominant color
     """
     # Extract RGB channels
     r, g, b = cv2.split(image)
     
-    # Create a mask where green is stronger than red and blue by a factor
-    green_dominant = (g > (r * 1.1)) & (g > (b * 1.1))
+    # Create a mask where one color is stronge than others
+    dominant = (g > (r * 1.1)) & (g > (b * 1.1))
     
     # Convert to uint8 format
-    green_dominant = green_dominant.astype(np.uint8) * 255
+    dominant = dominant.astype(np.uint8) * 255
     
-    return green_dominant
+    return dominant
 
 
 def filter_by_size_and_shape(binary_mask, min_size=MIN_SIZE, max_size=MAX_SIZE, min_aspect_ratio=MIN_ASPECT_RATIO):
@@ -267,14 +266,11 @@ def visualize_suture_analysis(original_image, suture_analysis):
         mid_y = int((y1 + y2) / 2)
         
         # Create label with suture number
-        label = f"#{i+1}"
-        
-        # Draw a small circle around the number for better visibility
-        cv2.circle(output_image, (mid_x, mid_y), 18, (255, 255, 255), -1)
+        label = f"{i+1}"
         
         # Add the label text
         cv2.putText(output_image, label, (mid_x-10, mid_y+5), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 5)
     
     return output_image
 
@@ -663,9 +659,9 @@ def select_best_line_per_region(binary_mask, suture_lines):
     print(f"Selected {len(best_lines)} best lines from {processed_contours} contour regions")
     return best_lines
 
-def extract_green_suture_mask(original_image):
+def extract_suture_mask(original_image):
     """
-    Extract green suture mask from a given image and analyze suture quality.
+    Extract suture mask from a given image and analyze suture quality.
     
     Args:
         original_image (numpy.ndarray): Input RGB image
@@ -675,13 +671,13 @@ def extract_green_suture_mask(original_image):
     """
     
     # Method 1: HSV color thresholding
-    hsv_mask = extract_green_sutures(original_image)
+    hsv_mask = extract_sutures(original_image)
     
-    # Method 2: Green channel dominance
-    green_dominant_mask = compute_green_dominance(original_image)
+    # Method 2: Channel dominance
+    dominant_mask = compute_dominance(original_image)
     
     # Combine methods
-    combined_mask = cv2.bitwise_or(hsv_mask, green_dominant_mask)
+    combined_mask = cv2.bitwise_or(hsv_mask, dominant_mask)
     
     # Filter by size and shape to keep only suture-like structures
     filtered_mask = filter_by_size_and_shape(combined_mask)
@@ -728,13 +724,13 @@ def analyze_image(image):
     Returns:
         tuple: (mask, original_image, suture_analysis)
     """
-    mask, original_image, suture_analysis = extract_green_suture_mask(image)
+    mask, original_image, suture_analysis = extract_suture_mask(image)
     return mask, original_image, suture_analysis
 
 if __name__ == "__main__":
     print(f"Processing single image: {INPUT_IMAGE_PATH}")
     original_image = load_image(INPUT_IMAGE_PATH)
-    mask, image, analysis = extract_green_suture_mask(original_image)
+    mask, image, analysis = extract_suture_mask(original_image)
 
     _ = display_analysis_results(image, analysis)
     plt.show()
