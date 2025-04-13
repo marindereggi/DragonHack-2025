@@ -50,25 +50,43 @@ function mapApiResponseToFrontendFormat(apiResponse: any): {
       // Extract data from the Python response format
       const sutureData = apiResponse.suture_analysis;
       
-      // Extract values from the API response
-      const isParallel = sutureData.parallelism === true;
-      const isEquallySpaced = sutureData.even_spacing === true;
-      const sutureCount = sutureData.sutures_detected || 0;
-      
-      // Calculate a score based on the data available (0-100)
-      // This is a simplified scoring that we compute on the frontend
-      let score = 0;
-      if (isParallel) score += 30;
-      if (isEquallySpaced) score += 30;
-      
-      // Count good sutures for scoring
+      // Count sutures and evaluate parallelism and spacing
       const individualSutures = sutureData.individual_sutures || [];
-      const goodSutures = individualSutures.filter((s: PythonSuture) => s.overall_good === true).length;
-      const sutureQualityScore = sutureCount > 0 
-        ? Math.floor(goodSutures / sutureCount * 40) 
-        : 0;
+      const sutureCount = sutureData.sutures_detected || individualSutures.length || 0;
       
+      // Check parallelism - at least 60% need to be parallel for the badge to show "Yes"
+      const parallelSutures = individualSutures.filter((s: PythonSuture) => s.is_parallel === true).length;
+      const parallelPercentage = sutureCount > 0 ? (parallelSutures / sutureCount) * 100 : 0;
+      const isParallel = parallelPercentage >= 60;
+      
+      // Check spacing - at least 60% need to be evenly spaced for the badge to show "Yes"
+      const evenlySpacedSutures = individualSutures.filter((s: PythonSuture) => s.even_spacing === true).length;
+      const evenSpacingPercentage = sutureCount > 0 ? (evenlySpacedSutures / sutureCount) * 100 : 0;
+      const isEquallySpaced = evenSpacingPercentage >= 60;
+      
+      // Calculate a more gracious score (0-100)
+      // We'll evaluate individual suture quality with a higher base score
+      // and give partial credit for parallelism and spacing
+      
+      // Base score - start at 50 as a minimum if there are any sutures
+      let score = sutureCount > 0 ? 50 : 0;
+      
+      // Add up to 20 points for parallelism, scaled by percentage
+      const parallelismScore = Math.round((parallelPercentage / 100) * 20);
+      score += parallelismScore;
+      
+      // Add up to 20 points for even spacing, scaled by percentage
+      const spacingScore = Math.round((evenSpacingPercentage / 100) * 20);
+      score += spacingScore;
+      
+      // Count good sutures for remaining scoring (up to 10 points)
+      const goodSutures = individualSutures.filter((s: PythonSuture) => s.overall_good === true).length;
+      const goodSuturePercentage = sutureCount > 0 ? (goodSutures / sutureCount) * 100 : 0;
+      const sutureQualityScore = Math.round((goodSuturePercentage / 100) * 10);
       score += sutureQualityScore;
+      
+      // Ensure score stays within 0-100 range
+      score = Math.min(100, Math.max(0, score));
       
       // Generate feedback based on the analysis
       const feedback = [];
@@ -76,13 +94,15 @@ function mapApiResponseToFrontendFormat(apiResponse: any): {
       if (isParallel) {
         feedback.push("Your sutures are relatively parallel, which is excellent.");
       } else {
-        feedback.push("Your sutures should be more parallel. Try to hold the needle at a consistent angle for each suture.");
+        const parallelPercent = Math.round(parallelPercentage);
+        feedback.push(`Only about ${parallelPercent}% of your sutures are parallel. Try to hold the needle at a consistent angle for each suture.`);
       }
       
       if (isEquallySpaced) {
         feedback.push("Your sutures have good even spacing.");
       } else {
-        feedback.push("The spacing between your sutures is not even enough. Try marking suture points in advance for better consistency.");
+        const evenPercent = Math.round(evenSpacingPercentage);
+        feedback.push(`Only about ${evenPercent}% of your sutures are evenly spaced. Try marking suture points in advance for better consistency.`);
       }
       
       const badSutures = sutureCount - goodSutures;
