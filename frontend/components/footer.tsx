@@ -20,17 +20,17 @@ export default function Footer() {
             <h3 className="font-semibold mb-4 text-foreground">Resources</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400">
+                <Link href="https://www.sciencedirect.com/science/article/abs/pii/0002961077904482" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400" target="_blank" rel="noopener noreferrer">
                   Suturing Techniques
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400">
+                <Link href="https://www.youtube.com/watch?v=z8oWv-nVO6g" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400" target="_blank" rel="noopener noreferrer">
                   Training Videos
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400">
+                <Link href="https://dermnetnz.org/topics/suturing-techniques" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400" target="_blank" rel="noopener noreferrer">
                   Best Practices
                 </Link>
               </li>
@@ -46,7 +46,7 @@ export default function Footer() {
             <h3 className="font-semibold mb-4 text-foreground">About</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400">
+                <Link href="/team" className="text-foreground/70 hover:text-teal-700 dark:hover:text-teal-400">
                   Team
                 </Link>
               </li>
