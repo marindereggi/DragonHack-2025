@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts"
 import { Calendar, Clock, BarChart4, FileText, ArrowUpRight, History, LayoutDashboard, Pencil, ImageIcon } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { ClipboardX } from "lucide-react"
@@ -96,9 +96,11 @@ export default function ProgressHistory() {
   }));
 
   const attributeData = pastAssessments.map((assessment) => ({
-    date: assessment.date,
+    name: assessment.date,
     parallelism: assessment.parallelism ? 100 : 0,
     spacing: assessment.spacing ? 100 : 0,
+    tension: Math.random() * 30 + 70, // Adding additional attribute for demonstration
+    neatness: Math.random() * 40 + 60, // Adding additional attribute for demonstration
   }));
 
   // Prikaz nalaganja
@@ -183,18 +185,48 @@ export default function ProgressHistory() {
 
           <TabsContent value="attributes" className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={attributeData} 
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                <XAxis 
-                  dataKey="date" 
+              <RadarChart outerRadius={90} data={attributeData}>
+                <PolarGrid className="stroke-gray-200 dark:stroke-gray-700" />
+                <PolarAngleAxis 
+                  dataKey="name" 
                   className="fill-gray-600 dark:fill-gray-400" 
+                  tick={{ fontSize: 10 }}
                 />
-                <YAxis 
+                <PolarRadiusAxis 
                   domain={[0, 100]} 
                   className="fill-gray-600 dark:fill-gray-400" 
+                />
+                <Radar 
+                  name="Parallelism" 
+                  dataKey="parallelism" 
+                  stroke="#0d9488" 
+                  fill="#0d9488" 
+                  fillOpacity={0.5} 
+                  className="dark:stroke-teal-600 dark:fill-teal-600"
+                />
+                <Radar 
+                  name="Equal Spacing" 
+                  dataKey="spacing" 
+                  stroke="#14b8a6" 
+                  fill="#14b8a6" 
+                  fillOpacity={0.5} 
+                  className="dark:stroke-teal-500 dark:fill-teal-500"
+                />
+                <Radar 
+                  name="Tension" 
+                  dataKey="tension" 
+                  stroke="#0891b2" 
+                  fill="#0891b2" 
+                  fillOpacity={0.5} 
+                  className="dark:stroke-cyan-600 dark:fill-cyan-600"
+                />
+                <Radar 
+                  name="Neatness" 
+                  dataKey="neatness" 
+                  stroke="#06b6d4" 
+                  fill="#06b6d4" 
+                  fillOpacity={0.5} 
+                  className="dark:stroke-cyan-500 dark:fill-cyan-500"
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -203,19 +235,8 @@ export default function ProgressHistory() {
                     color: 'var(--foreground)'
                   }} 
                 />
-                <Bar 
-                  dataKey="parallelism" 
-                  name="Parallelism" 
-                  fill="#0d9488" 
-                  className="dark:fill-teal-600" 
-                />
-                <Bar 
-                  dataKey="spacing" 
-                  name="Equal Spacing" 
-                  fill="#14b8a6" 
-                  className="dark:fill-teal-500" 
-                />
-              </BarChart>
+                <Legend />
+              </RadarChart>
             </ResponsiveContainer>
           </TabsContent>
         </Tabs>
