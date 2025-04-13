@@ -42,37 +42,42 @@ export default function TeamPage() {
           {
             name: "Marin Gazvoda de Reggi",
             bio: "The CS student who led the development of the whole project maintained such immaculate GitHub repositories that even his commit messages have their own fan club.",
-            image: "/team/member1.jpg"
+            image: "/images/marin.png"
           },
           {
             name: "Ana Bračić",
             bio: "The CS student crafted an intuitive interface and delivered such a compelling pitch that even the backend engineers momentarily forgot their love of command lines.",
-            image: "/team/member2.jpg"
+            image: "/images/ana.png"
           },
           {
             name: "Urban Malavašič",
             bio: "The medical student applied their clinical expertise to the project while having practiced so much on synthetic skin that their suturing precision could make a fashion designer question their career choices.",
-            image: "/team/member3.jpg"
+            image: "/images/urban.png"
           },
           {
             name: "Feliks Fortuna",
             bio: "The computer science graduate applied their backend and AI expertise while creating algorithms so intelligent they started suggesting more efficient ways to procrastinate.",
-            image: "/team/member4.jpg"
+            image: "/images/feliks.png"
           }
         ].map((member, i) => (
           <Card key={i} className="overflow-hidden flex flex-col h-full">
-            <div className="h-48 relative bg-gray-200 dark:bg-gray-700">
-              {/* Replace with actual team member images */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-gray-400">[Team Photo]</span>
+            <div className="flex justify-center items-center pt-6 pb-2">
+              <div className="w-32 h-32 relative rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <Image
+                  src={member.image}
+                  alt={member.name}
+                  width={128}
+                  height={128}
+                  className="object-cover"
+                  priority={i < 2}
+                />
               </div>
             </div>
-            <div className="p-4 flex-grow">
+            <div className="p-4 flex-grow text-center">
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{member.name}</h3>
-              <p className="text-sm text-teal-600 dark:text-teal-400 mb-2">{member.role}</p>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">{member.bio}</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">{member.bio}</p>
             </div>
-            <div className="flex gap-2 p-4 pt-0 justify-start">
+            <div className="flex gap-2 p-4 pt-0 justify-center">
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                 <Github className="h-4 w-4" />
                 <span className="sr-only">GitHub</span>
