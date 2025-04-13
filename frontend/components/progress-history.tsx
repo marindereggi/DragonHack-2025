@@ -352,7 +352,7 @@ export default function ProgressHistory() {
             <div className="bg-card border rounded-lg p-4">
               <h3 className="font-medium text-foreground mb-4">Assessment Details</h3>
 
-              <div className="relative h-48 mb-4 rounded overflow-hidden">
+              <div className="relative h-64 sm:h-80 md:h-96 w-full mb-6 rounded-lg overflow-hidden">
                 {imageError ? (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-muted/30 dark:bg-muted/10">
                     <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
@@ -363,7 +363,7 @@ export default function ProgressHistory() {
                     src={selectedAssessment.imageSrc || "/placeholder.svg"}
                     alt={`Suture assessment from ${selectedAssessment.date}`}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     onError={() => setImageError(true)}
                   />
                 )}
