@@ -9,21 +9,21 @@ const mockHistoryItems = [
     timestamp: new Date(Date.now() - 3600000 * 24 * 3).toISOString(), // 3 days ago
     filename: 'suture_sample_1.jpg',
     score: 78,
-    imageUrl: '/images/sample-suture-1.jpg' // This would be the path to the stored image
+    imageUrl: '/sample-suture-1.png' // This would be the path to the stored image
   },
   {
     id: 'history_2',
     timestamp: new Date(Date.now() - 3600000 * 24 * 1).toISOString(), // 1 day ago
     filename: 'suture_sample_2.jpg',
     score: 85,
-    imageUrl: '/images/sample-suture-2.jpg'
+    imageUrl: '/sample-suture-1.png'
   },
   {
     id: 'history_3',
     timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
     filename: 'suture_sample_3.jpg',
     score: 92,
-    imageUrl: '/images/sample-suture-3.jpg'
+    imageUrl: '/sample-suture-1.png'
   }
 ];
 
