@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 
 # ------ CONFIGURATION PARAMETERS - MODIFY THESE VALUES AS NEEDED ------
 # Input/output settings
-INPUT_IMAGE_PATH = "IMG_4181.jpg"
+INPUT_IMAGE_PATH = "image55.jpg"
+SHOW_MASK = False
 
 # Color detection parameters
-SATURATION_THRESHOLD = 20                    # Minimum saturation for detection (10-50)
-VALUE_THRESHOLD = 30                         # Minimum brightness for detection (10-50)
+SATURATION_THRESHOLD = 30                    # Minimum saturation for detection (10-50)
+VALUE_THRESHOLD = 40                         # Minimum brightness for detection (10-50)
 
 # Shape filtering parameters
 MIN_SIZE = 10                                # Minimum size of objects to keep
@@ -18,11 +19,11 @@ MIN_ASPECT_RATIO = 2.0                       # Minimum aspect ratio for line-lik
 # Line detection parameters
 HOUGH_THRESHOLD = 10                         # Threshold for Hough line detection
 MIN_LINE_LENGTH = 50                         # Minimum line length for Hough detection
-MAX_LINE_GAP = 10                            # Maximum gap between line segments
+MAX_LINE_GAP = 20                            # Maximum gap between line segments
 ANGLE_THRESHOLD = 10.0                       # Maximum allowed deviation in degrees from mean angle
 
 # Line proximity filtering
-PROXIMITY_THRESHOLD = 5         # Minimum distance (in pixels) between parallel lines to be considered separate
+PROXIMITY_THRESHOLD = 20        # Minimum distance (in pixels) between parallel lines to be considered separate
 KEEP_BEST_BY_LENGTH = False     # True to keep longer lines, False to keep lines with better angle
 # -------------------------------------------------------------------
 
@@ -66,8 +67,8 @@ def extract_sutures(image, saturation_threshold=SATURATION_THRESHOLD,
     h, s, v = cv2.split(hsv_image)
     
     # Define hue range in HSV (approximately 60-170 degrees, scaled to 0-180 in OpenCV)
-    lower_hue = 40
-    upper_hue = 80
+    lower_hue = 30
+    upper_hue = 60
     
     # Create binary mask for hue values
     mask_hue = cv2.inRange(h, lower_hue, upper_hue)
@@ -80,6 +81,12 @@ def extract_sutures(image, saturation_threshold=SATURATION_THRESHOLD,
     
     # Combine masks
     mask = mask_hue & mask_saturation & mask_value
+
+    if SHOW_MASK:
+        plt.imshow(mask, cmap='gray')
+        plt.title('Hue Mask')
+        plt.axis('off')
+        plt.show()
     
     # Convert to uint8 format (0-255)
     mask = mask.astype(np.uint8) * 255
@@ -249,6 +256,7 @@ def visualize_suture_analysis(original_image, suture_analysis):
         return output_image
     
     # Draw each suture with appropriate color and numbered label
+    print(f"Drawing {len(suture_analysis['individual_sutures'])} sutures")
     for i, suture in enumerate(suture_analysis["individual_sutures"]):
         (x1, y1), (x2, y2) = suture["line"]
         
@@ -259,7 +267,10 @@ def visualize_suture_analysis(original_image, suture_analysis):
             color = (255, 0, 0)  # Red for bad
         
         # Draw the suture line
-        cv2.line(output_image, (int(x1), int(y1)), (int(x2), int(y2)), color, 5)
+        cv2.line(output_image, (int(x1), int(y1)), (int(x2), int(y2)), color, 15)
+
+        # Print the coordinates of the line
+        print(f"Suture {i+1}: ({x1}, {y1}) to ({x2}, {y2})")
         
         # Calculate position for the label (midpoint of line, slightly offset)
         mid_x = int((x1 + x2) / 2)
@@ -369,6 +380,7 @@ def display_analysis_results(original_image, suture_analysis):
     plt.tight_layout()
     return fig
 
+
 def _select_best_line(close_lines, keep_by_length, mean_angle=None):
     """
     Helper function to select the best line from a group of close lines.
@@ -391,6 +403,7 @@ def _select_best_line(close_lines, keep_by_length, mean_angle=None):
     else:
         # Keep the line with angle closest to mean
         return min(close_lines, key=lambda line: abs(line[2] - mean_angle))
+
 
 def filter_nearby_lines(suture_lines, proximity_threshold=PROXIMITY_THRESHOLD, keep_by_length=KEEP_BEST_BY_LENGTH):
     """
@@ -492,13 +505,12 @@ def analyze_suture_quality(suture_lines, angle_threshold=ANGLE_THRESHOLD):
     # Calculate statistics for distances
     avg_distance = np.mean(distances) if distances else 0
     
-    # NEW: Calculate spacing threshold as 10% of average distance
-    spacing_threshold = 0.1 * avg_distance
+    # Calculate spacing threshold as 10% of average distance
+    spacing_threshold = 0.35 * avg_distance
     
     # For overall assessment, calculate if there are any large gaps
-    # (more adaptive than using a fixed variance threshold)
     max_distance_deviation = max([abs(d - avg_distance) for d in distances]) if distances else 0
-    large_gap_exists = max_distance_deviation > (0.15 * avg_distance)  # 50% threshold for large gaps
+    large_gap_exists = max_distance_deviation > (0.15 * avg_distance)
     
     # Evaluate each suture
     suture_quality = []
@@ -605,6 +617,7 @@ def filter_by_angle_deviation(suture_lines, mean_angle, max_deviation=40):
     print(f"Filtered out {len(suture_lines) - len(filtered_lines)} lines with angle deviation > {max_deviation}°")
     return filtered_lines
 
+
 def select_best_line_per_region(binary_mask, suture_lines):
     """
     For each region in the mask, select the best line representing that region.
@@ -659,6 +672,7 @@ def select_best_line_per_region(binary_mask, suture_lines):
     print(f"Selected {len(best_lines)} best lines from {processed_contours} contour regions")
     return best_lines
 
+
 def extract_suture_mask(original_image):
     """
     Extract suture mask from a given image and analyze suture quality.
@@ -698,8 +712,11 @@ def extract_suture_mask(original_image):
     
     # 4. Filter out lines that deviate more than 40° from the mean
     filtered_lines = filter_by_angle_deviation(best_lines, mean_angle, max_deviation=40)
+
+    # 5. Filter out lines that are too close to each other
+    filtered_lines = filter_nearby_lines(filtered_lines)
     
-    # 5. Analyze suture quality using the filtered lines
+    # 6. Analyze suture quality using the filtered lines
     suture_analysis = analyze_suture_quality(filtered_lines)
     
     # Store the total number of detected lines in the analysis results
@@ -709,10 +726,14 @@ def extract_suture_mask(original_image):
         suture_analysis["filtered_lines_detected"] = len(filtered_lines)
         suture_analysis["mean_angle"] = mean_angle
     
-    # 6. Create visualization with ALL filtered lines
-    _ = visualize_suture_analysis(original_image, suture_analysis)
-    
-    return final_mask, original_image, suture_analysis
+    # 7. Create visualization with ALL filtered lines
+    # _ = visualize_suture_analysis(original_image, suture_analysis)
+
+    # 8. Lower the brightness of the original image in rgb
+    lower_brightness = cv2.convertScaleAbs(original_image, alpha=0.8, beta=0)
+
+    return final_mask, lower_brightness, suture_analysis
+
 
 def analyze_image(image):
     """
@@ -726,6 +747,7 @@ def analyze_image(image):
     """
     mask, original_image, suture_analysis = extract_suture_mask(image)
     return mask, original_image, suture_analysis
+
 
 if __name__ == "__main__":
     print(f"Processing single image: {INPUT_IMAGE_PATH}")
